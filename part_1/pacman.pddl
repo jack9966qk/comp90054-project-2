@@ -3,111 +3,123 @@
 (define (domain pacman)
 
 ; ; remove requirements that are not needed
-(:requirements :typing :equality)
+; (:requirements :typing)
 
-(:types integer - number)
+; (:types integer - number)
 
 ; (:constants childA childB - childType1 
 ; )
 
-(:constants width height - number)
+; (:constants width height - number)
 
-(:predicates (pacman-at ?x ?y)
-             (food-at ?x ?y)
-             (wall-at ?x ?y)
-             (ghost-at ?x ?y)
+(:predicates (connected ?pos1 ?pos2)
+             (pacman-at ?pos)
+             (powered)
+             (is-last-powered-step ?time)
+             (is-first-powered-step ?time)
+             (time-at ?time)
+             (next-time ?time ?time2)
+             (food-at ?pos)
+             (powercap-at ?pos)
+             (wall-at ?pos)
+             (ghost-at ?pos)
 )
-
 
 ; (:functions (function1 ?c - childType2)
 ;             (cost)
 ; )
 
 ;define actions here
-; (:action move
-;  :parameters (?x ?y ?nx ?ny)
-;  :precondition (and
-;     (pacman-at (?x ?y))
-;     (not (wall-at ?nx ?ny))
-;     (not (ghost-at ?nx ?ny))
-;     (=
-;         (+
-;             (abs (- ?x ?nx))
-;             (abs (- ?y ?ny))
-;         1
-;         )
-;     )
-;  )
-;  :effect (and
-;     (not pacman-at (?x ?y))
-;     (pacman-at (?nx ?ny))
-;     (not food-at (?nx ?ny))
-;  )
-; )
 
-
-(   :action move-north
-    :parameters (?x ?y)
+(   :action move-normal
+    :parameters (?pos ?npos)
     :precondition (and
-        (pacman-at ?x ?y)
-        (<= (+ ?y 1) height)
-        (not (wall-at ?x (+ ?y 1)))
-        (not (ghost-at ?x (+ ?y 1)))
+        (pacman-at ?pos)
+        (or 
+            (connected ?pos ?npos)
+            (connected ?npos ?pos)
+        )
+        (not (wall-at ?npos))
+        (not (ghost-at ?npos))
+        (not (powercap-at ?npos))
+        (not (powered))
     )
-
     :effect (and
-        (not (pacman-at ?x ?y))
-        (pacman-at ?x (+ ?y 1))
-        (not (food-at ?x (+ ?y 1)))
+        (not (pacman-at ?pos))
+        (pacman-at ?npos)
+        (not (food-at ?npos))
     )
 )
 
-(   :action move-south
-    :parameters (?x ?y)
+(   :action move-eat-power
+    :parameters (?pos ?npos ?time)
     :precondition (and
-        (pacman-at ?x ?y)
-        (>= (- ?y 1) 0)
-        (not (wall-at ?x (+ ?y 1)))
-        (not (ghost-at ?x (+ ?y 1)))
+        (pacman-at ?pos)
+        (or 
+            (connected ?pos ?npos)
+            (connected ?npos ?pos)
+        )
+        (not (wall-at ?npos))
+        (not (ghost-at ?npos))
+        (is-first-powered-step ?time)
     )
-
     :effect (and
-        (not (pacman-at ?x ?y))
-        (pacman-at ?x (- ?y 1))
-        (not (food-at ?x (- ?y 1)))
+        (not (pacman-at ?pos))
+        (pacman-at ?npos)
+        (not (food-at ?npos))
+        (not (powercap-at ?npos))
+        (powered)
+        (time-at ?time)
     )
 )
 
-(   :action move-east
-    :parameters (?x ?y)
+(   :action move-powered
+    :parameters (?pos ?npos ?time ?ntime)
     :precondition (and
-        (pacman-at ?x ?y)
-        (<= (+ ?x 1) width)
-        (not (wall-at (+ ?x 1) ?y))
-        (not (ghost-at (+ ?x 1) ?y))
+        (pacman-at ?pos)
+        (or 
+            (connected ?pos ?npos)
+            (connected ?npos ?pos)
+        )
+        (not (wall-at ?npos))
+        (time-at ?time)
+        (next-time ?time ?ntime)
+        (powered)
     )
-
     :effect (and
-        (not (pacman-at ?x ?y))
-        (pacman-at (+ ?x 1) ?y)
-        (not (food-at (+ ?x 1) ?y))
+        (not (pacman-at ?pos))
+        (pacman-at ?npos)
+        (not (food-at ?npos))
+        (not (powercap-at ?npos))
+        (not (ghost-at ?npos))
+        (not (time-at ?time))
+        (time-at ?ntime)
     )
 )
 
-(   :action move-west
-    :parameters (?x ?y)
+(   :action move-powered-last-step
+    :parameters (?pos ?npos ?time)
     :precondition (and
-        (pacman-at ?x ?y)
-        (>= (- ?x 1) 0)
-        (not (wall-at (- ?x 1) ?y))
-        (not (ghost-at (- ?x 1) ?y))
+        (pacman-at ?pos)
+        (or 
+            (connected ?pos ?npos)
+            (connected ?npos ?pos)
+        )
+        (not (wall-at ?npos))
+        (time-at ?time)
+        (is-last-powered-step ?time)
+        (powered)
     )
-
     :effect (and
-        (not (pacman-at ?x ?y))
-        (pacman-at (- ?x 1) ?y)
-        (not (food-at (- ?x 1) ?y))
+        (not (pacman-at ?pos))
+        (pacman-at ?npos)
+        (not (food-at ?npos))
+        (not (powercap-at ?npos))
+        (not (ghost-at ?npos))
+        (not (time-at ?time))
+        (not (powered))
     )
 )
+
 
 )
