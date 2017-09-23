@@ -14,12 +14,15 @@
 
 (:predicates (connected ?pos1 ?pos2)
              (pacman-at ?pos)
-             (is-home ?pos)
-             (at-home)
+             (powered)
+             (is-last-powered-step ?time)
+             (is-first-powered-step ?time)
+             (time-at ?time)
+             (next-time ?time ?time2)
              (food-at ?pos)
+             (powercap-at ?pos)
              (wall-at ?pos)
              (ghost-at ?pos)
-             (scared-ghost-at ?pos)
 )
 
 ; (:functions (function1 ?c - childType2)
@@ -36,73 +39,85 @@
             (connected ?pos ?npos)
             (connected ?npos ?pos)
         )
-        (or
-            (and
-                (is-home ?pos)
-                (is-home ?npos)
-            )
-            (and
-                (not (is-home ?pos))
-                (not (is-home ?npos))
-            )
-        )
         (not (wall-at ?npos))
         (not (ghost-at ?npos))
+        (not (powercap-at ?npos))
+        (not (powered))
     )
     :effect (and
         (not (pacman-at ?pos))
         (pacman-at ?npos)
         (not (food-at ?npos))
-        (not (scared-ghost-at ?npos))
     )
 )
 
-(   :action move-from-home
-    :parameters (?pos ?npos)
+(   :action move-eat-power
+    :parameters (?pos ?npos ?time)
     :precondition (and
         (pacman-at ?pos)
         (or 
             (connected ?pos ?npos)
             (connected ?npos ?pos)
         )
-        (and 
-            (is-home ?pos)
-            (not (is-home ?npos))
-        )
-        (not (is-home ?npos))
         (not (wall-at ?npos))
         (not (ghost-at ?npos))
+        (is-first-powered-step ?time)
     )
     :effect (and
         (not (pacman-at ?pos))
         (pacman-at ?npos)
         (not (food-at ?npos))
-        (not (scared-ghost-at ?npos))
-        (not (at-home))
+        (not (powercap-at ?npos))
+        (powered)
+        (time-at ?time)
     )
 )
 
-(   :action move-to-home
-    :parameters (?pos ?npos)
+(   :action move-powered
+    :parameters (?pos ?npos ?time ?ntime)
     :precondition (and
         (pacman-at ?pos)
         (or 
             (connected ?pos ?npos)
             (connected ?npos ?pos)
         )
-        (and 
-            (not (is-home ?pos))
-            (is-home ?npos)
-        )
         (not (wall-at ?npos))
-        (not (ghost-at ?npos))
+        (time-at ?time)
+        (next-time ?time ?ntime)
+        (powered)
     )
     :effect (and
         (not (pacman-at ?pos))
         (pacman-at ?npos)
         (not (food-at ?npos))
-        (not (scared-ghost-at ?npos))
-        (at-home)
+        (not (powercap-at ?npos))
+        (not (ghost-at ?npos))
+        (not (time-at ?time))
+        (time-at ?ntime)
+    )
+)
+
+(   :action move-powered-last-step
+    :parameters (?pos ?npos ?time)
+    :precondition (and
+        (pacman-at ?pos)
+        (or 
+            (connected ?pos ?npos)
+            (connected ?npos ?pos)
+        )
+        (not (wall-at ?npos))
+        (time-at ?time)
+        (is-last-powered-step ?time)
+        (powered)
+    )
+    :effect (and
+        (not (pacman-at ?pos))
+        (pacman-at ?npos)
+        (not (food-at ?npos))
+        (not (powercap-at ?npos))
+        (not (ghost-at ?npos))
+        (not (time-at ?time))
+        (not (powered))
     )
 )
 
