@@ -8,121 +8,87 @@
 
 (define (problem pacmanSample) (:domain pacman)
 (:objects
-    pos-0-0 pos-0-1 pos-0-2 pos-0-3
-    pos-1-0 pos-1-1 pos-1-2 pos-1-3
-    pos-2-0 pos-2-1 pos-2-2 pos-2-3
-    pos-3-0 pos-3-1 pos-3-2 pos-3-3
-    pos-4-0 pos-4-1 pos-4-2 pos-4-3
-    pos-5-0 pos-5-1 pos-5-2 pos-5-3
-    pos-6-0 pos-6-1 pos-6-2 pos-6-3
-    pos-7-0 pos-7-1 pos-7-2 pos-7-3
+    posx-0
+    posx-1
+    posx-2
+    posx-3
+    posx-4
+    posx-5
+    posx-6
+    posx-7
+    
+    posy-0
+    posy-1
+    posy-2
+    posy-3
 )
 
 (:init
-    (connected pos-0-0 pos-1-0)
-    (connected pos-0-0 pos-0-1)
-    (connected pos-0-1 pos-1-1)
-    (connected pos-0-1 pos-0-2)
-    (connected pos-0-2 pos-1-2)
-    (connected pos-0-2 pos-0-3)
-    (connected pos-0-3 pos-1-3)
-    (connected pos-1-0 pos-2-0)
-    (connected pos-1-0 pos-1-1)
-    (connected pos-1-1 pos-2-1)
-    (connected pos-1-1 pos-1-2)
-    (connected pos-1-2 pos-2-2)
-    (connected pos-1-2 pos-1-3)
-    (connected pos-1-3 pos-2-3)
-    (connected pos-2-0 pos-3-0)
-    (connected pos-2-0 pos-2-1)
-    (connected pos-2-1 pos-3-1)
-    (connected pos-2-1 pos-2-2)
-    (connected pos-2-2 pos-3-2)
-    (connected pos-2-2 pos-2-3)
-    (connected pos-2-3 pos-3-3)
-    (connected pos-3-0 pos-4-0)
-    (connected pos-3-0 pos-3-1)
-    (connected pos-3-1 pos-4-1)
-    (connected pos-3-1 pos-3-2)
-    (connected pos-3-2 pos-4-2)
-    (connected pos-3-2 pos-3-3)
-    (connected pos-3-3 pos-4-3)
-    (connected pos-4-0 pos-5-0)
-    (connected pos-4-0 pos-4-1)
-    (connected pos-4-1 pos-5-1)
-    (connected pos-4-1 pos-4-2)
-    (connected pos-4-2 pos-5-2)
-    (connected pos-4-2 pos-4-3)
-    (connected pos-4-3 pos-5-3)
-    (connected pos-5-0 pos-6-0)
-    (connected pos-5-0 pos-5-1)
-    (connected pos-5-1 pos-6-1)
-    (connected pos-5-1 pos-5-2)
-    (connected pos-5-2 pos-6-2)
-    (connected pos-5-2 pos-5-3)
-    (connected pos-5-3 pos-6-3)
-    (connected pos-6-0 pos-7-0)
-    (connected pos-6-0 pos-6-1)
-    (connected pos-6-1 pos-7-1)
-    (connected pos-6-1 pos-6-2)
-    (connected pos-6-2 pos-7-2)
-    (connected pos-6-2 pos-6-3)
-    (connected pos-6-3 pos-7-3)
-    (connected pos-7-0 pos-7-1)
-    (connected pos-7-1 pos-7-2)
-    (connected pos-7-2 pos-7-3)
+    (adjcent posx-0 posx-1)
+    (adjcent posx-1 posx-2)
+    (adjcent posx-2 posx-3)
+    (adjcent posx-3 posx-4)
+    (adjcent posx-4 posx-5)
+    (adjcent posx-5 posx-6)
+    (adjcent posx-6 posx-7)
+    
+    (adjcent posy-0 posy-1)
+    (adjcent posy-1 posy-2)
+    (adjcent posy-2 posy-3)
+    
+    (same posx-0 posx-0)
+    (same posx-1 posx-1)
+    (same posx-2 posx-2)
+    (same posx-3 posx-3)
+    (same posx-4 posx-4)
+    (same posx-5 posx-5)
+    (same posx-6 posx-6)
+    (same posx-7 posx-7)
+    
+    (same posy-0 posy-0)
+    (same posy-1 posy-1)
+    (same posy-2 posy-2)
+    (same posy-3 posy-3)
+    
+    (wall-at posx-1 posy-0)
+    (wall-at posx-1 posy-1)
+    (wall-at posx-1 posy-2)
+    (wall-at posx-3 posy-3)
+    (wall-at posx-4 posy-0)
+    (wall-at posx-4 posy-1)
+    (wall-at posx-4 posy-3)
+    (wall-at posx-6 posy-0)
+    
+    (is-home posx-0)
+    (is-home posx-1)
+    (is-home posx-2)
+    (is-home posx-3)
 
-
-    (is-home pos-4-0)
-    (is-home pos-4-1)
-    (is-home pos-4-2)
-    (is-home pos-4-3)
-    (is-home pos-5-0)
-    (is-home pos-5-1)
-    (is-home pos-5-2)
-    (is-home pos-5-3)
-    (is-home pos-6-0)
-    (is-home pos-6-1)
-    (is-home pos-6-2)
-    (is-home pos-6-3)
-    (is-home pos-7-0)
-    (is-home pos-7-1)
-    (is-home pos-7-2)
-    (is-home pos-7-3)
-
-    (pacman-at pos-7-3)
+    (pacman-at posx-7 posy-3)
     
-    (ghost-at pos-3-0)
-    (scared-ghost-at pos-1-3)
+    (ghost-at posx-3 posy-0)
+    (scared-ghost-at posx-1 posy-3)
     
     
-    (food-at pos-0-0)
-    (food-at pos-2-0)
-    (food-at pos-3-1)
-    (food-at pos-2-2)
-    (food-at pos-3-2)
-    (food-at pos-0-2)
-    (food-at pos-0-3)
+    (food-at posx-0 posy-0)
+    (food-at posx-2 posy-0)
+    (food-at posx-3 posy-1)
+    (food-at posx-2 posy-2)
+    (food-at posx-3 posy-2)
+    (food-at posx-0 posy-2)
+    (food-at posx-0 posy-3)
     
-    (wall-at pos-1-0)
-    (wall-at pos-1-1)
-    (wall-at pos-1-2)
-    (wall-at pos-3-3)
-    (wall-at pos-4-0)
-    (wall-at pos-6-0)
-    (wall-at pos-4-1)
-    (wall-at pos-4-3)
 )
 
 (:goal
     (and
-        (not (food-at pos-0-0))
-        (not (food-at pos-2-0))
-        (not (food-at pos-3-1))
-        (not (food-at pos-2-2))
-        (not (food-at pos-3-2))
-        (not (food-at pos-0-2))
-        (not (food-at pos-0-3))
+        (not (food-at posx-0 posy-0))
+        (not (food-at posx-2 posy-0))
+        (not (food-at posx-3 posy-1))
+        (not (food-at posx-2 posy-2))
+        (not (food-at posx-3 posy-2))
+        (not (food-at posx-0 posy-2))
+        (not (food-at posx-0 posy-3))
         (at-home)
     )
 )

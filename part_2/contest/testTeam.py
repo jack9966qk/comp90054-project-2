@@ -76,8 +76,6 @@ class DummyAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
-    print(gameState)
-    exit()
 
 
   def chooseAction(self, gameState):
@@ -89,6 +87,8 @@ class DummyAgent(CaptureAgent):
     '''
     You should change this in your own agent.
     '''
+
+    print(actions)
 
     return random.choice(actions)
 
