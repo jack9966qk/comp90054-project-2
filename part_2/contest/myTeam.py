@@ -11,7 +11,7 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
+import os
 from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
@@ -71,22 +71,118 @@ class DummyAgent(CaptureAgent):
     on initialization time, please take a look at
     CaptureAgent.registerInitialState in captureAgents.py.
     '''
+    self.start = gameState.getAgentPosition(self.index)
     CaptureAgent.registerInitialState(self, gameState)
-
     '''
     Your initialization code goes here, if you need any.
     '''
+    self.discount = 0.9
+    
+    self.distancer.getMazeDistances()
+    mazeAction = {}
+    self.allpos = []
+    self.walls = gameState.getWalls()
+    self.size = (self.walls.width,self.walls.height)
+    self.allfood = []
+    self.map = {}
+    self.mapMST = {}
+    foodList = self.getFood(gameState).asList()
+    self.maxMST = self.getMST(foodList)
+    
+    #print self.size
+    #print self.allpos
+    
+    #util.pause()
+    
+    #os.system('PAUSE')
+  
+  def getDistance(self,pos1,pos2):
+    if False :#self.map.has_key((pos1,pos2)):
+        return self.map[(pos1,pos2)]
+    else:
+        temp = self.getMazeDistance(pos1,pos2)
+        self.map[(pos1,pos2)] = temp
+        return temp
+  
+  def getMST(self,foodList):
+    foodList = tuple(foodList)
+    if self.mapMST.has_key(foodList):
+        return self.mapMST[foodList]
+    else:
+        temp = 0
+        closeL = [foodList[0]]
+        openL = foodList[1:]
+        for food1 in openL:
+            tempv = 99999999
+            tempf = None
+            for food2 in closeL:
+                tempd = self.getDistance(food1,food2)
+                if tempd<tempv:
+                    tempv = tempd
+                    tempf = food2
+            temp+=tempv
+            closeL.append(tempf)
+        self.mapMST[foodList] = temp
+        return temp
+  
+  def getSuccessor(self, gameState, action):
+    """
+    Finds the next successor which is a grid position (location tuple).
+    """
+    successor = gameState.generateSuccessor(self.index, action)
+    return successor
+  
 
+  
+  def evaluate(self,gameState,action):
+    successor = self.getSuccessor(gameState, action)
+    foodList = self.getFood(gameState).asList()
+    foodLeft = len(self.getFood(gameState).asList())
+    foodValue = []
+    discount = self.discount
+    
+    MSTValue = self.getMST(foodList) / self.maxMST
+    
+    for food in foodList:
+        pos1 = food
+        pos2 = successor.getAgentPosition(self.index)
+        foodValue.append(self.getDistance(pos1,pos2))
+    
+    teamValue = 0
+    members = self.getTeam(successor)
+    for member in members:
+        if not member == self.index:
+            pos1 = successor.getAgentPosition(self.index)
+            pos2 = successor.getAgentPosition(member)
+            teamValue += self.getDistance(pos1,pos2)
+    
+    return -min(foodValue)+ 0*foodLeft + 0*MSTValue - 1/(teamValue+0.00000001)
 
   def chooseAction(self, gameState):
     """
     Picks among actions randomly.
     """
     actions = gameState.getLegalActions(self.index)
+    
+    values = [self.evaluate(gameState, a) for a in actions]
+    # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
 
+    maxValue = max(values)
+    bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+    
+    print zip(actions, values)
+    #util.pause()
+    
+    
+    return random.choice(bestActions)
+    
+    
+            
     '''
     You should change this in your own agent.
     '''
 
     return random.choice(actions)
 
+    
+    
