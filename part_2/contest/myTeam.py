@@ -17,6 +17,7 @@ import random, time, util
 from game import Directions
 import game
 import json
+import math
 weightFile = "weight.json"
 
 #################
@@ -99,7 +100,7 @@ class DummyAgent(CaptureAgent):
     
     #print self.size
     #print self.allpos
-    
+    #print self.start
     #util.pause()
     
     #os.system('PAUSE')
@@ -180,9 +181,11 @@ class DummyAgent(CaptureAgent):
     successor = self.getSuccessor(gameState, action)
     myState = successor.getAgentState(self.index)
     features["isPacman"] = myState.isPacman
-    features["invaderDist"] = min(self.getOpponentsDist(successor))
-    features["invaderNum"] = len(self.getOpponentsDist(successor))
+    features["invaderDist"] = min(self.getInvadersDist(successor))
+    features["invaderNum"] = len(self.getInvadersDist(successor))
+    features["ghostDist"] = min(self.getGhostDist(successor))<4
     features["home"] = self.getDistance(self.start,successor.getAgentPosition(self.index))
+    #features["getHomeDist"] = self.getHomeDist(successor)
     features['food'] = self.getFoodValue(successor)
     features['foodLeft'] = len(self.getFood(successor).asList())
     features['isStop'] = action == "Stop"
@@ -207,7 +210,7 @@ class DummyAgent(CaptureAgent):
     
     return min(foodDist)
     
-  def getOpponentsDist(self,gameState):
+  def getInvadersDist(self,gameState):
     myState = gameState.getAgentState(self.index)
     myPos = myState.getPosition()
     enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
@@ -218,7 +221,16 @@ class DummyAgent(CaptureAgent):
     
     return dists
    
-
+  def getGhostDist(self,gameState):
+    myState = gameState.getAgentState(self.index)
+    myPos = myState.getPosition()
+    enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+    invaders = [a for a in enemies if (not a.isPacman) and a.getPosition() != None]
+    dists = [self.getDistance(myPos, a.getPosition()) for a in invaders]
+    if len(dists)==0 :
+        dists = [0]
+    
+    return dists
   
   def getTeamDist(self,gameState):
     team = self.getTeam(gameState)
@@ -229,8 +241,24 @@ class DummyAgent(CaptureAgent):
     if self.roundcount<200: return 12
     return dist
   
+  def getHomeDist(self,gameState):
+    middle = int(math.floor(self.start[0])/15)
+    bestv = 999999
+    pos1 = gameState.getAgentPosition(self.index)
+    walls = gameState.getWalls().asList()
+    for i in range(16):
+        pos2 = (middle,i)
+        if not pos2 in walls:
+            tempv = self.getDistance(pos1,pos2)
+            bestv = min(bestv,tempv)
+    return bestv
+  
   def getMod(self,gameState):
     temp = "offense"
+    if len(self.getFood(gameState).asList()) < 3:
+        temp = "backhome"
+    if self.getHomeDist(gameState)<self.getFoodValue(gameState):
+        temp = "backhome"
     myState = gameState.getAgentState(self.index)
     pos1 = gameState.getAgentPosition(self.index)
     opps = self.getOpponents(gameState)

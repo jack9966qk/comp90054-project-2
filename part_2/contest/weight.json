@@ -6,6 +6,7 @@
         "isPacman": 0, 
         "invaderDist": 0,
         "invaderNum": 0,
+        "ghostDist": 1000,
         "isNear": -1,
         "isStop": -10
     }, 
@@ -16,6 +17,7 @@
         "isPacman": 0, 
         "invaderDist": 0,
         "invaderNum": 0,
+        "ghostDist": 1000,
         "isNear": -10,
         "isStop" :-20
     }, 
@@ -25,7 +27,8 @@
         "foodLeft": 0, 
         "isPacman": -1000, 
         "invaderDist": -10,
-        "invaderNum": -10000,
+        "invaderNum": -1000,
+        "ghostDist": 0,
         "isNear": -1,
         "isStop": -15
     }
