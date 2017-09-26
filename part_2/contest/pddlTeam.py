@@ -23,13 +23,14 @@ def getFoodPositions(gameState, isRed):
   return positions
 
 def makeEnvPredicates(gameState, isRed):
+  s = ""
   width, height = getLayoutSize(gameState)
   # adjcent
-  for x in range(width) - 1:
+  for x in range(width - 1):
     s += "(adjcent posx-{} posx-{})\n".format(x, x+1)
   s += "\n"
 
-  for y in range(height) - 1:
+  for y in range(height - 1):
     s += "(adjcent posy-{} posy-{})\n".format(y, y+1)
   s += "\n"
 
@@ -54,19 +55,19 @@ def makeObjSection(gameState):
   height = gameState.data.layout.height
   xobjs = ["posx-{}".format(x) for x in range(width)]
   yobjs = ["posy-{}".format(y) for y in range(height)]
-  return "(:objects\n" +
-    "\n".join(xobjs) + "\n\n" +
-    "\n".join(yobjs) + "\n)"
+  return "(:objects\n{}\n\n{}\n)".format(
+    "\n".join(xobjs), "\n".join(yobjs))
 
-def makePacmanInitSection(gameState, isRed, foodPositions):
+def makePacmanInitSection(gameState, isRed, selfIdx, foodPositions, scaredIdx):
   s = "(:init\n"
   s += makeEnvPredicates(gameState, isRed)
   s += "\n"
 
   # home
-  yLo, yHi = 0, width/2 if isRed else width/2, width
-  for x in range(width):
-    for y in range(yLo, yHi):
+  width, height = getLayoutSize(gameState)
+  xLo, xHi = (0, width/2) if isRed else (width/2, width)
+  for x in range(xLo, xHi):
+    for y in range(height):
       s += "(is-home posx-{} posy-{})\n".format(x, y)
   s += "\n"
   
@@ -92,12 +93,8 @@ def makePacmanInitSection(gameState, isRed, foodPositions):
   # food
   for x, y in foodPositions:
     s += "(food-at posx-{} posy-{})\n".format(x, y)
-  food = getFoodPositions(gameState, isRed)
-  for x in range(width):
-    for y in range(height):
-      if food[x][y]:
-        
   s += "\n"
+  s += ")"
   return s
 
 def makePacmanGoalSection(gameState, foodPositions):
@@ -114,9 +111,10 @@ def makePacmanGoalSection(gameState, foodPositions):
 
 def makePacmanProblem(gameState, isRed, selfIdx, scaredIdx):
   foodPositions = getFoodPositions(gameState, isRed)
-  return "(define (problem pacmanProblem) (:domain pacman)\n" +
-    makeObjSection(gameState) + "\n\n" +
-    makePacmanInitSection(gameState, isRed, foodPositions) + "\n\n" +
+  return "(define (problem pacmanProblem) (:domain pacman)\n" + \
+    makeObjSection(gameState) + "\n\n" + \
+    makePacmanInitSection(gameState, isRed, selfIdx,
+      foodPositions, scaredIdx) + "\n\n" + \
     makePacmanGoalSection(gameState, foodPositions) + "\n\n)"
 
 def makeGhostInitSection(gameState, isRed, selfIdx):
@@ -141,6 +139,7 @@ def makeGhostInitSection(gameState, isRed, selfIdx):
   ghx, ghy = gameState.getAgentPosition(selfIdx)
   s += "(ghost-at posx-{} posy-{})\n\n".format(ghx, ghy)
 
+  s += ")"
   return s
 
 def makeGhostGoalSection(gameState):
@@ -155,28 +154,35 @@ def makeGhostGoalSection(gameState):
   return s
 
 def makeGhostProblem(gameState, isRed, selfIdx):
-  return "(define (problem ghostProblem) (:domain ghost)\n" +
-    makeObjSection(gameState) + "\n\n" +
-    makeGhostInitSection(gameState, isRed) + "\n\n" +
+  return "(define (problem ghostProblem) (:domain ghost)\n" + \
+    makeObjSection(gameState) + "\n\n" + \
+    makeGhostInitSection(gameState, isRed, selfIdx) + "\n\n" + \
     makeGhostGoalSection(gameState) + "\n\n)"
 
-def parseSolution(solution, actions):
+def parseSolution(solution, actions, x, y):
   if solution:
-      posx, posy = solution.strip("()").split()[-2:]
-      nx, ny = posx[-1], posy[-1]
-      x, y = gameState.getAgentPosition(self.index)
+    print(solution)
+    posx, posy = solution.strip("()").split()[-2:]
+    nx_str, ny_str = (posx.split("-")[-1], posy.split("-")[-1])
+    if nx_str.isdigit() and ny_str.isdigit():
+      nx, ny = int(nx_str), int(ny_str)
+      print(nx, ny)
+      print(x, y)
+      print(actions)
       action = None
       if nx == x + 1:
         action = "East"
       elif nx == x - 1:
         action = "West"
       elif ny == y + 1:
-        action = "South"
-      elif ny == y - 1:
         action = "North"
+      elif ny == y - 1:
+        action = "South"
+      print(action)
       if action in actions:
         return action
   print("WARNING: Solution not parsed successfully or not valid")
+  # exit()
   return None
 
 #################
@@ -256,7 +262,8 @@ class PddlOffenseAgent(CaptureAgent):
     
     solution = fastDownwardAdapter.plan("../../part_1/pacman.pddl", problem)
 
-    action = parseSolution(solution, actions)
+    x, y = gameState.getAgentPosition(self.index)
+    action = parseSolution(solution, actions, x, y)
     if action: return action
 
     # fall back to random
@@ -309,7 +316,8 @@ class PddlDefenseAgent(CaptureAgent):
     
     solution = fastDownwardAdapter.plan("../../part_1/ghost.pddl", problem)
 
-    action = parseSolution(solution, actions)
+    x, y = gameState.getAgentPosition(self.index)
+    action = parseSolution(solution, actions, x, y)
     if action: return action
 
     # fall back to random
