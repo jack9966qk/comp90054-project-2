@@ -180,7 +180,7 @@ class DummyAgent(CaptureAgent):
     successor = self.getSuccessor(gameState, action)
     myState = successor.getAgentState(self.index)
     features["isPacman"] = myState.isPacman
-    features["invaderDist"] = self.getOpponentsMinDist(successor)
+    features["invaderDist"] = min(self.getOpponentsDist(successor))
     features["invaderNum"] = len(self.getOpponentsDist(successor))
     features["home"] = self.getDistance(self.start,successor.getAgentPosition(self.index))
     features['food'] = self.getFoodValue(successor)
@@ -208,30 +208,17 @@ class DummyAgent(CaptureAgent):
     return min(foodDist)
     
   def getOpponentsDist(self,gameState):
-  
-    opps = self.getOpponents(gameState)
-    temp = 0
-    pos1 = gameState.getAgentPosition(self.index)
-    dist = []
-    for opp in opps:
-        pos2 = gameState.getAgentPosition(opp)
-        if not pos2 == None:
-            dist.append(self.getDistance(pos1,pos2))
+    myState = gameState.getAgentState(self.index)
+    myPos = myState.getPosition()
+    enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+    invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+    dists = [self.getDistance(myPos, a.getPosition()) for a in invaders]
+    if len(dists)==0 :
+        dists = [0]
     
-    return dist
+    return dists
    
-  def getOpponentsMinDist(self,gameState):
-    opps = self.getOpponents(gameState)
-    temp = 0
-    pos1 = gameState.getAgentPosition(self.index)
-    dist = []
-    for opp in opps:
-        pos2 = gameState.getAgentPosition(opp)
-        if not pos2 == None:
-            dist.append(self.getDistance(pos1,pos2))
-    if len(dist)>0: 
-        temp = min(dist)
-    return temp
+
   
   def getTeamDist(self,gameState):
     team = self.getTeam(gameState)
