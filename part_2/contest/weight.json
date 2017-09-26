@@ -1,13 +1,13 @@
 {
     "backhome": {
         "food": 0, 
-        "home": -1, 
+        "home": -100, 
         "foodLeft": 0, 
         "isPacman": 0, 
         "invaderDist": 0,
         "invaderNum": 0,
-        "isNear": 1,
-        "isStop": 0
+        "isNear": -1,
+        "isStop": -10
     }, 
     "offense": {
         "food": -2, 
@@ -16,8 +16,8 @@
         "isPacman": 0, 
         "invaderDist": 0,
         "invaderNum": 0,
-        "isNear": 1,
-        "isStop" :0
+        "isNear": -10,
+        "isStop" :-20
     }, 
     "defense": {
         "food": 0, 
@@ -26,7 +26,7 @@
         "isPacman": -1000, 
         "invaderDist": -10,
         "invaderNum": -10000,
-        "isNear": 1,
+        "isNear": -1,
         "isStop": -15
     }
 }

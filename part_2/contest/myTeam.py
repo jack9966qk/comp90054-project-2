@@ -186,8 +186,8 @@ class DummyAgent(CaptureAgent):
     features['food'] = self.getFoodValue(successor)
     features['foodLeft'] = len(self.getFood(successor).asList())
     features['isStop'] = action == "Stop"
-    features['isNear'] = min([self.getTeamDist(successor)*self.roundcount/10,3])
-    
+    features['isNear'] = max([5-self.getTeamDist(successor),0])
+    #features['isNear'] = 100/(self.getTeamDist(successor)+0.000001)
     return features
 
   def getWeights(self, gameState, action):
@@ -226,17 +226,22 @@ class DummyAgent(CaptureAgent):
     pos1 = gameState.getAgentPosition(team[0])
     pos2 = gameState.getAgentPosition(team[1])
     dist = self.getDistance(pos1,pos2)
+    if self.roundcount<200: return 12
     return dist
   
   def getMod(self,gameState):
     temp = "offense"
     myState = gameState.getAgentState(self.index)
+    pos1 = gameState.getAgentPosition(self.index)
     opps = self.getOpponents(gameState)
     obs = False
+    dist = []
     for opp in opps:
-        if not gameState.getAgentPosition(opp) == None:
+        pos2 = gameState.getAgentPosition(opp)
+        if not pos2 == None:
             obs = True
-    if obs == True:
+            dist.append(self.getDistance(pos1,pos2))
+    if obs == True and min(dist)<4:
         if not myState.isPacman:
             temp = "defense"
         else:
