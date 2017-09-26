@@ -16,6 +16,8 @@ from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
 import game
+import json
+weightFile = "weight.json"
 
 #################
 # Team creation #
@@ -76,6 +78,38 @@ class DummyAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
+    
+    offense = {
+    "isPacman": 0,
+    "opponentDist": 0,
+    "home": 0,
+    "food": -1,
+    "foodLeft":100
+    }
+    backhome = {
+    "isPacman": 0,
+    "opponentDist": 0,
+    "home": -1,
+    "food": 0,
+    "foodLeft":0
+    }
+    defense = {
+    "isPacman": -100,
+    "opponentDist": -1,
+    "home": 0,
+    "food": 0,
+    "foodLeft":0
+    }
+    self.weightDict = {
+    "offense":offense,
+    "backhome":backhome,
+    "defense":defense
+    }
+    
+    out = open(weightFile,"w")
+    json.dump(self.weightDict,out,indent = 4)
+    out.close()
+    
     self.discount = 0.9
     
     self.distancer.getMazeDistances()
@@ -97,11 +131,12 @@ class DummyAgent(CaptureAgent):
     #os.system('PAUSE')
   
   def getDistance(self,pos1,pos2):
-    if False :#self.map.has_key((pos1,pos2)):
+    if self.map.has_key((pos1,pos2)) or self.map.has_key((pos2,pos1)):
         return self.map[(pos1,pos2)]
     else:
         temp = self.getMazeDistance(pos1,pos2)
         self.map[(pos1,pos2)] = temp
+        self.map[(pos2,pos1)] = temp
         return temp
   
   def getMST(self,foodList):
@@ -125,6 +160,7 @@ class DummyAgent(CaptureAgent):
         self.mapMST[foodList] = temp
         return temp
   
+  
   def getSuccessor(self, gameState, action):
     """
     Finds the next successor which is a grid position (location tuple).
@@ -132,32 +168,11 @@ class DummyAgent(CaptureAgent):
     successor = gameState.generateSuccessor(self.index, action)
     return successor
   
-
-  
   def evaluate(self,gameState,action):
-    successor = self.getSuccessor(gameState, action)
-    foodList = self.getFood(gameState).asList()
-    foodLeft = len(self.getFood(gameState).asList())
-    foodValue = []
-    discount = self.discount
+    features = self.getFeatures(gameState, action)
+    weights = self.getWeights(gameState, action)
+    return features * weights
     
-    MSTValue = self.getMST(foodList) / self.maxMST
-    
-    for food in foodList:
-        pos1 = food
-        pos2 = successor.getAgentPosition(self.index)
-        foodValue.append(self.getDistance(pos1,pos2))
-    
-    teamValue = 0
-    members = self.getTeam(successor)
-    for member in members:
-        if not member == self.index:
-            pos1 = successor.getAgentPosition(self.index)
-            pos2 = successor.getAgentPosition(member)
-            teamValue += self.getDistance(pos1,pos2)
-    
-    return -min(foodValue)+ 0*foodLeft + 0*MSTValue - 1/(teamValue+0.00000001)
-
   def chooseAction(self, gameState):
     """
     Picks among actions randomly.
@@ -172,17 +187,75 @@ class DummyAgent(CaptureAgent):
     
     print zip(actions, values)
     #util.pause()
-    
-    
+
     return random.choice(bestActions)
-    
-    
-            
+
     '''
     You should change this in your own agent.
     '''
-
     return random.choice(actions)
 
     
+  def getFeatures(self, gameState, action):
+    """
+    Returns a counter of features for the state
+    """
+    features = util.Counter()
+    successor = self.getSuccessor(gameState, action)
+    myState = successor.getAgentState(self.index)
+    features["isPacman"] = myState.isPacman
+    features["opponentDist"] = self.getOpponentsDist(successor)
+    features["home"] = self.getDistance(self.start,successor.getAgentPosition(self.index))
+    features['food'] = self.getFoodValue(successor)
+    features['foodLeft'] = len(self.getFood(successor).asList())
+    return features
+
+  def getWeights(self, gameState, action):
+    """
+    Normally, weights do not depend on the gamestate.  They can be either
+    a counter or a dictionary.
+    """
+    mod = self.getMod(gameState)
+    dict = self.weightDict[mod]
     
+    return dict
+    
+  def getFoodValue(self,gameState):
+    foodList = self.getFood(gameState).asList()
+    pos1 = gameState.getAgentPosition(self.index)
+    foodDist = [self.getDistance(pos1,pos2) for pos2 in foodList]
+    
+    return min(foodDist)
+    
+  def getOpponentsDist(self,gameState):
+    opps = self.getOpponents(gameState)
+    temp = 0
+    pos1 = gameState.getAgentPosition(self.index)
+    dist = []
+    for opp in opps:
+        pos2 = gameState.getAgentPosition(opp)
+        if not pos2 == None:
+            dist.append(self.getDistance(pos1,pos2))
+    if len(dist)>0: 
+        temp = min(dist)
+    return temp
+  
+  def getMod(self,gameState):
+    temp = "offense"
+    myState = gameState.getAgentState(self.index)
+    opps = self.getOpponents(gameState)
+    obs = False
+    for opp in opps:
+        if not gameState.getAgentPosition(opp) == None:
+            obs = True
+    if obs == True:
+        if myState.isPacman:
+            temp = "defense"
+        else:
+            temp = "backhome"
+            
+    return temp
+    
+    return "offense"
+    return "backhome"
+    return "defense"

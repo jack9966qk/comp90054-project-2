@@ -1,0 +1,23 @@
+{
+    "backhome": {
+        "food": 0, 
+        "home": -1, 
+        "foodLeft": 0, 
+        "isPacman": 0, 
+        "opponentDist": 0
+    }, 
+    "offense": {
+        "food": -1, 
+        "home": 0, 
+        "foodLeft": 100, 
+        "isPacman": 0, 
+        "opponentDist": 0
+    }, 
+    "defense": {
+        "food": 0, 
+        "home": 0, 
+        "foodLeft": 0, 
+        "isPacman": -100, 
+        "opponentDist": -1
+    }
+}
