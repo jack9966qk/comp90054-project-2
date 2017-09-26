@@ -78,39 +78,13 @@ class DummyAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
-    
-    offense = {
-    "isPacman": 0,
-    "opponentDist": 0,
-    "home": 0,
-    "food": -1,
-    "foodLeft":100
-    }
-    backhome = {
-    "isPacman": 0,
-    "opponentDist": 0,
-    "home": -1,
-    "food": 0,
-    "foodLeft":0
-    }
-    defense = {
-    "isPacman": -100,
-    "opponentDist": -1,
-    "home": 0,
-    "food": 0,
-    "foodLeft":0
-    }
-    self.weightDict = {
-    "offense":offense,
-    "backhome":backhome,
-    "defense":defense
-    }
-    
-    out = open(weightFile,"w")
-    json.dump(self.weightDict,out,indent = 4)
-    out.close()
+
+    fo = open(weightFile,"r")
+    self.weightDict = json.load(fo)
+    fo.close()
     
     self.discount = 0.9
+    self.roundcount = 0
     
     self.distancer.getMazeDistances()
     mazeAction = {}
@@ -185,6 +159,7 @@ class DummyAgent(CaptureAgent):
     maxValue = max(values)
     bestActions = [a for a, v in zip(actions, values) if v == maxValue]
     
+    print [self.getMod(gameState)]
     print zip(actions, values)
     #util.pause()
 
@@ -200,14 +175,19 @@ class DummyAgent(CaptureAgent):
     """
     Returns a counter of features for the state
     """
+    self.roundcount+=1
     features = util.Counter()
     successor = self.getSuccessor(gameState, action)
     myState = successor.getAgentState(self.index)
     features["isPacman"] = myState.isPacman
-    features["opponentDist"] = self.getOpponentsDist(successor)
+    features["invaderDist"] = self.getOpponentsMinDist(successor)
+    features["invaderNum"] = len(self.getOpponentsDist(successor))
     features["home"] = self.getDistance(self.start,successor.getAgentPosition(self.index))
     features['food'] = self.getFoodValue(successor)
     features['foodLeft'] = len(self.getFood(successor).asList())
+    features['isStop'] = action == "Stop"
+    features['isNear'] = min([self.getTeamDist(successor)*self.roundcount/10,3])
+    
     return features
 
   def getWeights(self, gameState, action):
@@ -228,6 +208,19 @@ class DummyAgent(CaptureAgent):
     return min(foodDist)
     
   def getOpponentsDist(self,gameState):
+  
+    opps = self.getOpponents(gameState)
+    temp = 0
+    pos1 = gameState.getAgentPosition(self.index)
+    dist = []
+    for opp in opps:
+        pos2 = gameState.getAgentPosition(opp)
+        if not pos2 == None:
+            dist.append(self.getDistance(pos1,pos2))
+    
+    return dist
+   
+  def getOpponentsMinDist(self,gameState):
     opps = self.getOpponents(gameState)
     temp = 0
     pos1 = gameState.getAgentPosition(self.index)
@@ -240,6 +233,14 @@ class DummyAgent(CaptureAgent):
         temp = min(dist)
     return temp
   
+  def getTeamDist(self,gameState):
+    team = self.getTeam(gameState)
+    temp = 0
+    pos1 = gameState.getAgentPosition(team[0])
+    pos2 = gameState.getAgentPosition(team[1])
+    dist = self.getDistance(pos1,pos2)
+    return dist
+  
   def getMod(self,gameState):
     temp = "offense"
     myState = gameState.getAgentState(self.index)
@@ -249,7 +250,7 @@ class DummyAgent(CaptureAgent):
         if not gameState.getAgentPosition(opp) == None:
             obs = True
     if obs == True:
-        if myState.isPacman:
+        if not myState.isPacman:
             temp = "defense"
         else:
             temp = "backhome"
