@@ -5,15 +5,8 @@ from itertools import product
 from capture import SIGHT_RANGE
 import game
 import fastDownwardAdapter
-
-def getLayoutSize(gameState):
-  width = gameState.data.layout.width
-  height = gameState.data.layout.height
-  return width, height
-
-def getHomeArea(gameState, isRed):
-  width, height = getLayoutSize(gameState)
-  return (0, width/2) if isRed else (width/2, width)
+from moreUtil import getLayoutSize, getHomeArea
+from additionalState import AdditionalState
 
 def getFoodPositions(gameState, isRed):
   width, height = getLayoutSize(gameState)
@@ -228,11 +221,19 @@ def createTeam(firstIndex, secondIndex, isRed,
   """
 
   # The following line is an example only; feel free to change it.
-  return [eval(first)(firstIndex), eval(second)(secondIndex)]
+  additionalState = AdditionalState(isRed, [firstIndex, secondIndex])
+  firstAgent = eval(first)(firstIndex)
+  secondAgent = eval(second)(secondIndex)
+  firstAgent.setAdditionalState(additionalState)
+  secondAgent.setAdditionalState(additionalState)
+  return [firstAgent, secondAgent]
 
 ##########
 # Agents #
 ##########
+
+EATCAP = "eatcap"
+RETURN = "return"
 
 class PddlOffenseAgent(CaptureAgent):
   """
@@ -265,23 +266,46 @@ class PddlOffenseAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
+    # self.state = EATCAP
+    # self.carry = 0
 
+  # def updateState(self, gameState):
+  #   # x, _ = gameState.getAgentPosition(self.index)
+  #   # xLo, xHi = getHomeArea(gameState, gameState.isOnRedTeam(self.index))
+  #   # if xLo <= x < xHi:
+  #   #   self.carry = 0
+  #   if self.carry > 5:
+  #     self.state = RETURN
+  #   else:
+  #     self.state = EATCAP
+
+  def setAdditionalState(self, additionalState):
+    self.additionalState = additionalState
+
+  def shouldReturn(self):
+    return self.additionalState.carry[self.index] >= 5
 
   def chooseAction(self, gameState):
     """
     # TODO
     """
+    # if failed fall back to random
+    actions = gameState.getLegalActions(self.index)
+    action = random.choice(actions)
+    
     selfPos = gameState.getAgentPosition(self.index)
     # drawSight(gameState, selfPos, self.debugDraw)
 
-    actions = gameState.getLegalActions(self.index)
 
     isRed = gameState.isOnRedTeam(self.index)
-    foodPositions = getFoodPositions(gameState, isRed)
-
-    # limit num of food considered
-    foodPositions = sorted(foodPositions, key=lambda p: self.distancer.getDistance(selfPos, p))
-    foodPositions = foodPositions[:5]
+    
+    if self.shouldReturn():
+      foodPositions = []
+    else:
+      foodPositions = getFoodPositions(gameState, isRed)
+      # limit num of food considered
+      foodPositions = sorted(foodPositions, key=lambda p: self.distancer.getDistance(selfPos, p))
+      foodPositions = foodPositions[:5]
 
     problem = makePacmanProblem(
       gameState,
@@ -293,11 +317,10 @@ class PddlOffenseAgent(CaptureAgent):
     solution = fastDownwardAdapter.plan("../../part_1/pacman.pddl", problem)
 
     x, y = gameState.getAgentPosition(self.index)
-    action = parseSolution(solution, actions, x, y)
-    if action: return action
-
-    # fall back to random
-    return random.choice(actions)
+    act = parseSolution(solution, actions, x, y)
+    if act: action = act
+    self.additionalState.update(gameState, self.index, action)
+    return action
 
 class PddlDefenseAgent(CaptureAgent):
   """
@@ -342,12 +365,20 @@ class PddlDefenseAgent(CaptureAgent):
     self.centre = min(validPositions, key=getEccentricity)
     self.homeRange = (range(xLo, xHi), range(height))
 
+  def setAdditionalState(self, additionalState):
+    self.additionalState = additionalState
+
   def chooseAction(self, gameState):
     """
     # TODO
     """
     # selfPos = gameState.getAgentPosition(self.index)
     # drawSight(gameState, selfPos, self.debugDraw)
+    
+
+    # if failed fall back to random
+    actions = gameState.getLegalActions(self.index)
+    action = random.choice(actions)
 
     actions = gameState.getLegalActions(self.index)
 
@@ -362,9 +393,8 @@ class PddlDefenseAgent(CaptureAgent):
     solution = fastDownwardAdapter.plan("../../part_1/ghost.pddl", problem)
 
     x, y = gameState.getAgentPosition(self.index)
-    action = parseSolution(solution, actions, x, y)
-    if action: return action
-
-    # fall back to random
-    return random.choice(actions)
+    act = parseSolution(solution, actions, x, y)
+    if act: action = act
+    self.additionalState.update(gameState, self.index, action)
+    return action
 
