@@ -1,6 +1,7 @@
 from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
+from itertools import product
 import game
 import fastDownwardAdapter
 
@@ -8,6 +9,10 @@ def getLayoutSize(gameState):
   width = gameState.data.layout.width
   height = gameState.data.layout.height
   return width, height
+
+def getHomeArea(gameState, isRed):
+  width, height = getLayoutSize(gameState)
+  return (0, width/2) if isRed else (width/2, width)
 
 def getFoodPositions(gameState, isRed):
   width, height = getLayoutSize(gameState)
@@ -64,8 +69,8 @@ def makePacmanInitSection(gameState, isRed, selfIdx, foodPositions, scaredIdx):
   s += "\n"
 
   # home
-  width, height = getLayoutSize(gameState)
-  xLo, xHi = (0, width/2) if isRed else (width/2, width)
+  _, height = getLayoutSize(gameState)
+  xLo, xHi = getHomeArea(gameState, isRed)
   for x in range(xLo, xHi):
     for y in range(height):
       s += "(is-home posx-{} posy-{})\n".format(x, y)
@@ -142,7 +147,7 @@ def makeGhostInitSection(gameState, isRed, selfIdx):
   s += ")"
   return s
 
-def makeGhostGoalSection(gameState):
+def makeGhostGoalSection(gameState, standbyPos):
   s = "(:goal\n"
   s += "(and\n"
   # no pacman left
@@ -150,19 +155,22 @@ def makeGhostGoalSection(gameState):
   for x in range(width):
     for y in range(height):
       s += "(not (pacman-at posx-{} posy-{}))\n".format(x, y)
+  # standbyPos
+  posX, posY = standbyPos
+  s += "(ghost-at posx-{} posy-{})\n".format(posX, posY)
   s += ")\n)"
   return s
 
-def makeGhostProblem(gameState, isRed, selfIdx):
+def makeGhostProblem(gameState, isRed, selfIdx, standbyPos):
   return "(define (problem ghostProblem) (:domain ghost)\n" + \
     makeObjSection(gameState) + "\n\n" + \
     makeGhostInitSection(gameState, isRed, selfIdx) + "\n\n" + \
-    makeGhostGoalSection(gameState) + "\n\n)"
+    makeGhostGoalSection(gameState, standbyPos) + "\n\n)"
 
 def parseSolution(solution, actions, x, y):
   if solution:
     print(solution)
-    posx, posy = solution.strip("()").split()[-2:]
+    posx, posy = solution[0].strip().strip("()").split()[-2:]
     nx_str, ny_str = (posx.split("-")[-1], posy.split("-")[-1])
     if nx_str.isdigit() and ny_str.isdigit():
       nx, ny = int(nx_str), int(ny_str)
@@ -244,8 +252,6 @@ class PddlOffenseAgent(CaptureAgent):
     '''
     Your initialization code goes here, if you need any.
     '''
-    # print(gameState)
-    # exit()
 
 
   def chooseAction(self, gameState):
@@ -301,6 +307,15 @@ class PddlDefenseAgent(CaptureAgent):
     Your initialization code goes here, if you need any.
     '''
 
+    # get 'centre' of home area
+    _, height = getLayoutSize(gameState)
+    xLo, xHi = getHomeArea(gameState, gameState.isOnRedTeam(self.index))
+    validPositions = [(x, y) for x, y
+      in product(range(xLo, xHi), range(height))
+      if not gameState.hasWall(x, y)]
+    def getEccentricity(pos):
+      return max([self.distancer.getDistance(pos, p) for p in validPositions])
+    self.centre = min(validPositions, key=getEccentricity)
 
   def chooseAction(self, gameState):
     """
@@ -311,7 +326,8 @@ class PddlDefenseAgent(CaptureAgent):
     problem = makeGhostProblem(
       gameState,
       gameState.isOnRedTeam(self.index),
-      self.index
+      self.index,
+      self.centre
     )
     
     solution = fastDownwardAdapter.plan("../../part_1/ghost.pddl", problem)

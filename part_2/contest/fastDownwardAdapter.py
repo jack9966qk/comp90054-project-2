@@ -15,4 +15,4 @@ def plan(domainFile, problem):
         return None
     else:
         with open("sas_plan") as planFile:
-            return planFile.readline().strip()
+            return [line for line in planFile.readlines() if not line.startswith(";")]
