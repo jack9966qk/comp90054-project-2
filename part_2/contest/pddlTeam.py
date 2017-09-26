@@ -2,6 +2,7 @@ from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
 from itertools import product
+from capture import SIGHT_RANGE
 import game
 import fastDownwardAdapter
 
@@ -27,39 +28,44 @@ def getFoodPositions(gameState, isRed):
         positions.append((x, y))
   return positions
 
-def makeEnvPredicates(gameState, isRed):
+def makeEnvPredicates(gameState, isRed, posRange=None):
+  if not posRange:
+    width, height = getLayoutSize(gameState)
+    posRange = (range(width), range(height))
+  xRange, yRange = posRange
+
   s = ""
-  width, height = getLayoutSize(gameState)
   # adjcent
-  for x in range(width - 1):
+  for x in list(xRange)[:-1]:
     s += "(adjcent posx-{} posx-{})\n".format(x, x+1)
   s += "\n"
 
-  for y in range(height - 1):
+  for y in list(yRange)[:-1]:
     s += "(adjcent posy-{} posy-{})\n".format(y, y+1)
   s += "\n"
 
   # same
-  for x in range(width):
+  for x in xRange:
     s += "(same posx-{} posx-{})\n".format(x, x)
   s += "\n"
 
-  for y in range(height):
+  for y in yRange:
     s += "(same posy-{} posy-{})\n".format(y, y)
   s += "\n"
 
   # wall
-  for x in range(width):
-    for y in range(height):
-      if gameState.hasWall(x, y):
-        s += "(wall-at posx-{} posy-{})\n".format(x, y)
+  for x, y in product(xRange, yRange):
+    if gameState.hasWall(x, y):
+      s += "(wall-at posx-{} posy-{})\n".format(x, y)
   return s
 
-def makeObjSection(gameState):
-  width = gameState.data.layout.width
-  height = gameState.data.layout.height
-  xobjs = ["posx-{}".format(x) for x in range(width)]
-  yobjs = ["posy-{}".format(y) for y in range(height)]
+def makeObjSection(gameState, posRange=None):
+  if not posRange:
+    width, height = getLayoutSize(gameState)
+    posRange = (range(width), range(height))
+  xRange, yRange = posRange
+  xobjs = ["posx-{}".format(x) for x in xRange]
+  yobjs = ["posy-{}".format(y) for y in yRange]
   return "(:objects\n{}\n\n{}\n)".format(
     "\n".join(xobjs), "\n".join(yobjs))
 
@@ -114,17 +120,16 @@ def makePacmanGoalSection(gameState, foodPositions):
   s += ")\n)"
   return s
 
-def makePacmanProblem(gameState, isRed, selfIdx, scaredIdx):
-  foodPositions = getFoodPositions(gameState, isRed)
+def makePacmanProblem(gameState, isRed, selfIdx, scaredIdx, foodPositions):
   return "(define (problem pacmanProblem) (:domain pacman)\n" + \
     makeObjSection(gameState) + "\n\n" + \
     makePacmanInitSection(gameState, isRed, selfIdx,
       foodPositions, scaredIdx) + "\n\n" + \
     makePacmanGoalSection(gameState, foodPositions) + "\n\n)"
 
-def makeGhostInitSection(gameState, isRed, selfIdx):
+def makeGhostInitSection(gameState, isRed, selfIdx, posRange):
   s = "(:init\n"
-  s += makeEnvPredicates(gameState, isRed)
+  s += makeEnvPredicates(gameState, isRed, posRange)
   s += "\n"
   
   # pacmans
@@ -137,39 +142,39 @@ def makeGhostInitSection(gameState, isRed, selfIdx):
     pacmanPos = gameState.getAgentPosition(i)
     if pacmanPos:
       pacx, pacy = pacmanPos
-      s += "(pacman-at posx-{} posy-{})\n\n".format(pacx, pacy)
+      if pacx in posRange[0] and pacy in posRange[1]:
+        s += "(pacman-at posx-{} posy-{})\n\n".format(pacx, pacy)
   s += "\n"
 
   # ghost
   ghx, ghy = gameState.getAgentPosition(selfIdx)
-  s += "(ghost-at posx-{} posy-{})\n\n".format(ghx, ghy)
+  if ghx in posRange[0] and ghy in posRange[1]:
+    s += "(ghost-at posx-{} posy-{})\n\n".format(ghx, ghy)
 
   s += ")"
   return s
 
-def makeGhostGoalSection(gameState, standbyPos):
+def makeGhostGoalSection(gameState, standbyPos, posRange):
   s = "(:goal\n"
   s += "(and\n"
   # no pacman left
-  width, height = getLayoutSize(gameState)
-  for x in range(width):
-    for y in range(height):
-      s += "(not (pacman-at posx-{} posy-{}))\n".format(x, y)
+  for x, y in product(posRange[0], posRange[1]):
+    s += "(not (pacman-at posx-{} posy-{}))\n".format(x, y)
   # standbyPos
   posX, posY = standbyPos
   s += "(ghost-at posx-{} posy-{})\n".format(posX, posY)
   s += ")\n)"
   return s
 
-def makeGhostProblem(gameState, isRed, selfIdx, standbyPos):
+def makeGhostProblem(gameState, isRed, selfIdx, standbyPos, posRange):
   return "(define (problem ghostProblem) (:domain ghost)\n" + \
-    makeObjSection(gameState) + "\n\n" + \
-    makeGhostInitSection(gameState, isRed, selfIdx) + "\n\n" + \
-    makeGhostGoalSection(gameState, standbyPos) + "\n\n)"
+    makeObjSection(gameState, posRange=posRange) + "\n\n" + \
+    makeGhostInitSection(gameState, isRed, selfIdx, posRange) + "\n\n" + \
+    makeGhostGoalSection(gameState, standbyPos, posRange) + "\n\n)"
 
 def parseSolution(solution, actions, x, y):
   if solution:
-    print(solution)
+    print(solution[0])
     posx, posy = solution[0].strip().strip("()").split()[-2:]
     nx_str, ny_str = (posx.split("-")[-1], posy.split("-")[-1])
     if nx_str.isdigit() and ny_str.isdigit():
@@ -192,6 +197,14 @@ def parseSolution(solution, actions, x, y):
   print("WARNING: Solution not parsed successfully or not valid")
   # exit()
   return None
+
+def drawSight(gameState, selfPos, drawFunc):
+  width, height = getLayoutSize(gameState)
+  visiblePositions = [pos for pos in product(range(width), range(height))
+    if abs(pos[0] - selfPos[0]) + abs(pos[1] - selfPos[1]) <= SIGHT_RANGE
+  ]
+  drawFunc(visiblePositions, [1, 0, 0], clear=True)
+  drawFunc([selfPos], [0, 0, 1])
 
 #################
 # Team creation #
@@ -258,13 +271,24 @@ class PddlOffenseAgent(CaptureAgent):
     """
     # TODO
     """
+    selfPos = gameState.getAgentPosition(self.index)
+    # drawSight(gameState, selfPos, self.debugDraw)
+
     actions = gameState.getLegalActions(self.index)
+
+    isRed = gameState.isOnRedTeam(self.index)
+    foodPositions = getFoodPositions(gameState, isRed)
+
+    # limit num of food considered
+    foodPositions = sorted(foodPositions, key=lambda p: self.distancer.getDistance(selfPos, p))
+    foodPositions = foodPositions[:5]
 
     problem = makePacmanProblem(
       gameState,
-      gameState.isOnRedTeam(self.index),
+      isRed,
       self.index,
-      []) # TODO determine whether ghost scared
+      [], # TODO determine whether ghost scared
+      foodPositions)
     
     solution = fastDownwardAdapter.plan("../../part_1/pacman.pddl", problem)
 
@@ -316,18 +340,23 @@ class PddlDefenseAgent(CaptureAgent):
     def getEccentricity(pos):
       return max([self.distancer.getDistance(pos, p) for p in validPositions])
     self.centre = min(validPositions, key=getEccentricity)
+    self.homeRange = (range(xLo, xHi), range(height))
 
   def chooseAction(self, gameState):
     """
     # TODO
     """
+    # selfPos = gameState.getAgentPosition(self.index)
+    # drawSight(gameState, selfPos, self.debugDraw)
+
     actions = gameState.getLegalActions(self.index)
 
     problem = makeGhostProblem(
       gameState,
       gameState.isOnRedTeam(self.index),
       self.index,
-      self.centre
+      self.centre,
+      self.homeRange
     )
     
     solution = fastDownwardAdapter.plan("../../part_1/ghost.pddl", problem)
