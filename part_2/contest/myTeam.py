@@ -88,13 +88,14 @@ class DummyAgent(CaptureAgent):
         self.epsilon = 0.05
         self.gamma = 0.8
         self.alpha = 0.2
+        self.discount = 0.9
         '''
         Your initialization code goes here, if you need any.
         '''
 
-    def getQValue(self, action):
+    def getQValue(self, gameState, action):
         sum = 0
-        features = self.getFeatures(action)
+        features = self.getFeatures(gameState, action)
         for feature, value in features.iteritems():
             sum += self.weights[feature] * value
         return sum
@@ -105,7 +106,7 @@ class DummyAgent(CaptureAgent):
             return 0.0
         value = None
         for action in actions:
-            q = self.getQValue(action)
+            q = self.getQValue(gameState, action)
             if value is None or value < q:
                 value = q
         return value
@@ -117,7 +118,7 @@ class DummyAgent(CaptureAgent):
         value = None
         bestAction = None
         for action in actions:
-            q = self.getQValue(action)
+            q = self.getQValue(gameState, action)
             if bestAction is None or value < q:
                 value = q
                 bestAction = [action]
@@ -127,6 +128,11 @@ class DummyAgent(CaptureAgent):
 
     def chooseAction(self, gameState):
         # Pick Action
+        prev = self.getPreviousObservation()
+        if prev:
+            reward = gameState.getScore()-prev.getScore()
+            reward -= 0.1
+            self.update(prev, self.lastAction, gameState, reward)
         legalActions = gameState.getLegalActions(self.index)
         state = None
         action = None
@@ -135,13 +141,13 @@ class DummyAgent(CaptureAgent):
                 action = random.choice(legalActions)
             else:
                 action = self.computeActionFromQValues(gameState)
-
+        self.lastAction = action
         return action
     
     def update(self, state, action, nextState, reward):
         maxNext = self.computeValueFromQValues(nextState)
-        diff = reward + self.discount * maxNext - self.getQValue(action)
-        features = self.featExtractor.getFeatures(state, action)
+        diff = reward + self.discount * maxNext - self.getQValue(state, action)
+        features = self.getFeatures(state, action)
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
         
@@ -155,8 +161,7 @@ class DummyAgent(CaptureAgent):
     def getReward(self, gameState):
         return self.getScore(gameState)
 
-    def getFeatures(self, action):
-        gameState = self.getCurrentObservation()
+    def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
         food = self.getFood(gameState)
         walls = gameState.getWalls()
