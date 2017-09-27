@@ -159,6 +159,7 @@ class DummyAgent(CaptureAgent):
         maxNext = self.computeValueFromQValues(nextState)
         diff = reward + self.discount * maxNext - self.getQValue(state, action)
         features = self.getFeatures(state, action)
+ #       print features
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
         
@@ -195,7 +196,7 @@ class DummyAgent(CaptureAgent):
         features["invaderDist"] = moreUtil.getInvaderDistFeature(self, nextState)
         features["invaderNum"] = moreUtil.getInvaderNumFeature(self, nextState)
         features["getHomeDist"] = moreUtil.getHomeDistFeature(self, nextState)
-        features["ghostDist"] = moreUtil.getGhostDist(self, nextState)
+        features["ghostDist"] = moreUtil.getGhostDistFeature(self, nextState)
         features["isPacman"] = moreUtil.getIsPacmanFeature(self, nextState)
         features['foodLeft'] = moreUtil.getFoodLeftFeature(self, nextState)
         features['carry'] = moreUtil.getCarryFeature(self)
