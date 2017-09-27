@@ -134,7 +134,6 @@ class DummyAgent(CaptureAgent):
             reward -= 0.1
             self.update(prev, self.lastAction, gameState, reward)
         legalActions = gameState.getLegalActions(self.index)
-        state = None
         action = None
         if legalActions is not None:
             if util.flipCoin(self.epsilon):
@@ -165,8 +164,6 @@ class DummyAgent(CaptureAgent):
         nextState = gameState.generateSuccessor(self.index, action)
         food = self.getFood(gameState)
         walls = gameState.getWalls()
-        oppo = self.getOpponents(gameState)
-        oppoPos = [gameState.getAgentPosition(i) for i in oppo]
         
         features = util.Counter()
         
@@ -175,18 +172,13 @@ class DummyAgent(CaptureAgent):
         features["bias"] = 1.0
         
         features['foodLeft'] = len(self.getFood(nextState).asList())
-        
-   #     features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
-
-        # if there is no danger of ghosts then add the food feature
-        if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
-            features["eats-food"] = 1.0
 
         dist = closestFood((next_x, next_y), food, walls)
         if dist is not None:
             # make the distance a number less than one otherwise the update
             # will diverge wildly
             features["closest-food"] = float(dist) / (walls.width * walls.height)
+        
         features.divideAll(10.0)
         return features
         
