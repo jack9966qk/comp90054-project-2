@@ -1,4 +1,8 @@
 from game import Actions
+import json
+
+tSetName = "train.json"
+lSetName = "label.json"
 
 def getLayoutSize(gameState):
     width = gameState.data.layout.width
@@ -90,6 +94,33 @@ def closestFood(pos, food, walls):
     # no food found
     return None
 
+def saveSet(trainset,labelSet):
+    saveFile(trainset,tSetName)
+    saveFile(labelSet,lSetName)
+    return 0
+    
+def getTrainSet(featrues):
+    dict = ['invaderDist',
+    'getHomeDist',
+    'ghostDist',
+    'isPacman',
+    'foodLeft',
+    'carry',
+    'closest-food',
+    'bias'
+    ]
+    temp = []
+    for line in dict:
+        temp.append(featrues[line])
+    return temp
+    
+def saveFile(file,fileName):
+    with open(fileName, "w") as f:
+        json.dump(file,f,indent = 4)
+        
+def loadFile(fileName):
+    with open(fileName) as f:
+        return json.load(f)
 
 def getClosestFoodFeature(agent, gameState, nextState):
     food = agent.getFood(gameState)

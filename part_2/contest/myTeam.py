@@ -22,6 +22,8 @@ import moreUtil
 from additionalState import AdditionalState
 
 WEIGHTS_FILENAME = "trainedWeights.pickle"
+trainSet = []
+labelSet = []
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):
@@ -105,63 +107,34 @@ class DummyAgent(CaptureAgent):
         Your initialization code goes here, if you need any.
         '''
 
-    def getQValue(self, gameState, action):
-        sum = 0
+        
+    def evaluate(self,gameState,action):
         features = self.getFeatures(gameState, action)
-        for feature, value in features.iteritems():
-            sum += self.weights[feature] * value
-        return sum
-    
-    def computeValueFromQValues(self, gameState):
-        actions = gameState.getLegalActions(self.index)
-        if actions is None or len(actions) == 0:
-            return 0.0
-        value = None
-        for action in actions:
-            q = self.getQValue(gameState, action)
-            if value is None or value < q:
-                value = q
-        return value
-    
-    def computeActionFromQValues(self, gameState):
-        actions = gameState.getLegalActions(self.index)
-        if actions is None:
-            return None
-        value = None
-        bestAction = None
-        for action in actions:
-            q = self.getQValue(gameState, action)
-            if bestAction is None or value < q:
-                value = q
-                bestAction = [action]
-            elif value == q:
-                bestAction.append(action)
-        return random.choice(bestAction)
-
+        weights = self.weights
+        return features * weights
+        
+        
     def chooseAction(self, gameState):
         # Pick Action
         prev = self.getPreviousObservation()
         if prev:
             reward = self.getReward(prev, self.lastAction, gameState)
-            self.update(prev, self.lastAction, gameState, reward)
-        legalActions = gameState.getLegalActions(self.index)
-        action = None
-        if legalActions is not None:
-            if util.flipCoin(self.epsilon):
-                action = random.choice(legalActions)
-            else:
-                action = self.computeActionFromQValues(gameState)
+#            self.update(prev, self.lastAction, gameState, reward)
+        else:
+            reward = 0
+        
+        actions = gameState.getLegalActions(self.index)
+        values = [self.evaluate(gameState, a) for a in actions]
+        maxValue = max(values)
+        bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+        
+        action = random.choice(bestActions)
         self.lastAction = action
-        self.additionalState.update(gameState, self.index, action)
+        features = self.getFeatures(gameState,action,sel = True)
+        trainSet.append(moreUtil.getTrainSet(features))
+        labelSet.append(reward)
         return action
     
-    def update(self, state, action, nextState, reward):
-        maxNext = self.computeValueFromQValues(nextState)
-        diff = reward + self.discount * maxNext - self.getQValue(state, action)
-        features = self.getFeatures(state, action)
-#        print features['invaderNum']
-        for feature, value in features.iteritems():
-            self.weights[feature] += self.alpha * diff * features[feature]
         
     def setAdditionalState(self, additionalState):
         self.additionalState = additionalState
@@ -169,10 +142,9 @@ class DummyAgent(CaptureAgent):
     def final(self, gameState):
         CaptureAgent.final(self, gameState)
         # save updated weights to file
+        moreUtil.saveSet(trainSet,labelSet)
         saveWeightsJson(WEIGHTS, WEIGHTS_FILENAME)
 
-    # def getReward(self, gameState):
-    #     return self.getScore(gameState)
     def getReward(self, state, action, nextState):
         nx, ny = nextState.getAgentPosition(self.index)
         x, y = state.getAgentPosition(self.index)
@@ -203,10 +175,10 @@ class DummyAgent(CaptureAgent):
             return 3 # eat capsule
         return -5
 
-    def getFeatures(self, gameState, action):
+    def getFeatures(self, gameState, action,sel = False):
         nextState = gameState.generateSuccessor(self.index, action)
         features = util.Counter()
-        
+        if sel : nextState = gameState
         features["invaderDist"] = moreUtil.getInvaderDistFeature(self, nextState)
 #        features["invaderNum"] = moreUtil.getInvaderNumFeature(self, nextState)
         features["getHomeDist"] = moreUtil.getHomeDistFeature(self, nextState)
@@ -215,7 +187,8 @@ class DummyAgent(CaptureAgent):
         features['foodLeft'] = moreUtil.getFoodLeftFeature(self, nextState)
         features['carry'] = moreUtil.getCarryFeature(self)
         features["closest-food"] = moreUtil.getClosestFoodFeature(self, gameState, nextState)
-
+        #features["opponentMinDist1"] = moreUtil.getopponentMinDist(self,gameState)
+        
         features["bias"] = 1.0
         
         features.divideAll(10.0)
