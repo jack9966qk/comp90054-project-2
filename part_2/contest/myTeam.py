@@ -145,6 +145,10 @@ class DummyAgent(CaptureAgent):
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
         
+        
+
+    def final(self, gameState):
+        CaptureAgent.final(self, gameState)
         # save updated weights to file
         saveWeights(WEIGHTS, WEIGHTS_FILENAME)
 
