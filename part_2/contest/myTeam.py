@@ -14,8 +14,18 @@
 
 from captureAgents import CaptureAgent
 import random, time, util
-from game import Directions
+from game import Directions, Actions
 import game
+import os
+from weightIO import saveWeights, loadWeights
+
+WEIGHTS_FILENAME = "trainedWeights.pickle"
+
+# read from file if exist
+if os.path.exists(WEIGHTS_FILENAME):
+    WEIGHTS = loadWeights(WEIGHTS_FILENAME)
+else:
+    WEIGHTS = util.Counter()
 
 #################
 # Team creation #
@@ -73,43 +83,41 @@ class DummyAgent(CaptureAgent):
         '''
         CaptureAgent.registerInitialState(self, gameState)
 
+        self.weights = WEIGHTS
+        self.QValues = util.Counter()
+        self.epsilon = 0.05
+        self.gamma = 0.8
+        self.alpha = 0.2
         '''
         Your initialization code goes here, if you need any.
         '''
-    def __init__(self, epsilon=0.05, gamma=0.8, alpha=0.2, **args):
-        self.weights = util.Counter()
-        self.QValues = util.Counter()
-        self.epsilon = epsilon
-        self.gamma = gamma
-        self.alpha = alpha
-        CaptureAgent.__init__(self, **args)
-    
-    def getQValue(self, state, action):
+
+    def getQValue(self, action):
         sum = 0
-        features = self.getFeatures(state, action)
+        features = self.getFeatures(action)
         for feature, value in features.iteritems():
             sum += self.weights[feature] * value
         return sum
     
-    def computeValueFromQValues(self, state, gameState):
+    def computeValueFromQValues(self, gameState):
         actions = gameState.getLegalActions(self.index)
         if actions is None or len(actions) == 0:
             return 0.0
         value = None
         for action in actions:
-            q = self.getQValue(state, action)
+            q = self.getQValue(action)
             if value is None or value < q:
                 value = q
         return value
     
-    def computeActionFromQValues(self, state, gameState):
+    def computeActionFromQValues(self, gameState):
         actions = gameState.getLegalActions(self.index)
         if actions is None:
             return None
         value = None
         bestAction = None
         for action in actions:
-            q = self.getQValue(state, action)
+            q = self.getQValue(action)
             if bestAction is None or value < q:
                 value = q
                 bestAction = [action]
@@ -117,34 +125,38 @@ class DummyAgent(CaptureAgent):
                 bestAction.append(action)
         return random.choice(bestAction)
 
-    def chooseAction(self, state, gameState):
-         # Pick Action
+    def chooseAction(self, gameState):
+        # Pick Action
         legalActions = gameState.getLegalActions(self.index)
+        state = None
         action = None
         if legalActions is not None:
             if util.flipCoin(self.epsilon):
                 action = random.choice(legalActions)
             else:
-                action = self.computeActionFromQValues(state)
+                action = self.computeActionFromQValues(gameState)
 
         return action
     
     def update(self, state, action, nextState, reward):
         maxNext = self.computeValueFromQValues(nextState)
-        diff = reward + self.discount * maxNext - self.getQValue(state, action)
+        diff = reward + self.discount * maxNext - self.getQValue(action)
         features = self.featExtractor.getFeatures(state, action)
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
+        
+        # save updated weights to file
+        saveWeights(WEIGHTS, WEIGHTS_FILENAME)
 
-    def getReward(self, state, gameState):
+    def getReward(self, gameState):
         return self.getScore(gameState)
 
-    def getFeatures(self, state, action):
+    def getFeatures(self, action):
         gameState = self.getCurrentObservation()
         nextState = gameState.generateSuccessor(self.index, action)
-        food = self.getFood()
-        walls = self.getWalls()
-        oppo = self.getOpponents()
+        food = self.getFood(gameState)
+        walls = gameState.getWalls()
+        oppo = self.getOpponents(gameState)
         oppoPos = [gameState.getAgentPosition(i) for i in oppo]
         
         features = util.Counter()
@@ -153,7 +165,9 @@ class DummyAgent(CaptureAgent):
         
         features["bias"] = 1.0
         
-        features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
+        features['foodLeft'] = len(self.getFood(nextState).asList())
+        
+   #     features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
 
         # if there is no danger of ghosts then add the food feature
         if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
