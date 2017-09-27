@@ -16,7 +16,7 @@ def getInvaderDist(agent, gameState):
     invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
     dists = [agent.getMazeDistance(myPos, a.getPosition()) for a in invaders]
     if len(dists)==0 :
-        dists = [-1]
+        dists = [0]
     return dists
 
 def getHomeDist(agent, gameState):
@@ -42,7 +42,7 @@ def getGhostDist(agent, gameState):
     invaders = [a for a in enemies if (not a.isPacman) and a.getPosition() != None]
     dists = [agent.getMazeDistance(myPos, a.getPosition()) for a in invaders]
     if len(dists)==0 :
-        dists = [-1]
+        dists = [0]
 
     return dists
 
@@ -99,5 +99,5 @@ def getClosestFoodFeature(agent, gameState, nextState):
     if dist is not None:
         # make the distance a number less than one otherwise the update
         # will diverge wildly
-        return float(dist) / (walls.width * walls.height)
+        return float(dist ** 2) / (walls.width * walls.height)
         

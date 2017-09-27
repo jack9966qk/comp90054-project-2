@@ -99,7 +99,7 @@ class DummyAgent(CaptureAgent):
         self.QValues = util.Counter()
         self.epsilon = 0.2
         self.gamma = 0.8
-        self.alpha = 0.2
+        self.alpha = 0.05
         self.discount = 0.9
         '''
         Your initialization code goes here, if you need any.
@@ -159,7 +159,7 @@ class DummyAgent(CaptureAgent):
         maxNext = self.computeValueFromQValues(nextState)
         diff = reward + self.discount * maxNext - self.getQValue(state, action)
         features = self.getFeatures(state, action)
- #       print features
+#        print features['invaderNum']
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
         
@@ -176,25 +176,39 @@ class DummyAgent(CaptureAgent):
     def getReward(self, state, action, nextState):
         nx, ny = nextState.getAgentPosition(self.index)
         x, y = state.getAgentPosition(self.index)
+        
         if (abs(nx - x) + abs(ny - y)) > 1: # check death
             return -10
-        if (nx, ny) == (x, y):
+        
+        if (nx, ny) == (x, y): # no move
             return -1
+        
+        enemies = [state.getAgentState(i) for i in self.getOpponents(state)]
+        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+        positions = [a.getPosition() for a in invaders]
+        if len(positions) > 0 and not state.getAgentState(self.index).isPacman:
+            for position in positions:
+                if (nx, ny) == position: return 5 # chase invaders
+        
+        features = self.getFeatures(state, action)
+        if state.getAgentState(self.index).isPacman and not nextState.getAgentState(self.index).isPacman and features['carry'] > 0:
+            return features['carry'] * 20
+        
         isRed = state.isOnRedTeam(self.index)
         food = state.getBlueFood() if isRed else state.getRedFood()
         capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
         if food[nx][ny]:
             return 1 # eat food
         if (nx, ny) in capsule:
-            return 5 # eat capsule
-        return 0
+            return 3 # eat capsule
+        return -5
 
     def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
         features = util.Counter()
         
         features["invaderDist"] = moreUtil.getInvaderDistFeature(self, nextState)
-        features["invaderNum"] = moreUtil.getInvaderNumFeature(self, nextState)
+#        features["invaderNum"] = moreUtil.getInvaderNumFeature(self, nextState)
         features["getHomeDist"] = moreUtil.getHomeDistFeature(self, nextState)
         features["ghostDist"] = moreUtil.getGhostDistFeature(self, nextState)
         features["isPacman"] = moreUtil.getIsPacmanFeature(self, nextState)
