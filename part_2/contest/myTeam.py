@@ -18,6 +18,7 @@ from game import Directions, Actions
 import game
 import os
 from weightIO import *
+import moreUtil
 from additionalState import AdditionalState
 
 WEIGHTS_FILENAME = "trainedWeights.pickle"
@@ -191,91 +192,21 @@ class DummyAgent(CaptureAgent):
 
     def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
-        myState = nextState.getAgentState(self.index)
-        food = self.getFood(gameState)
-        walls = gameState.getWalls()
-        
         features = util.Counter()
         
-        next_x, next_y = nextState.getAgentPosition(self.index)
-        
-        
-        features["invaderDist"] = min(self.getInvadersDist(nextState))
-        features["invaderNum"] = len(self.getInvadersDist(nextState))
-        features["getHomeDist"] = self.getHomeDist(nextState)
-        features["ghostDist"] = min(self.getGhostDist(nextState))
-        features["isPacman"] = myState.isPacman
-        
+        features["invaderDist"] = moreUtil.getInvaderDistFeature(self, nextState)
+        features["invaderNum"] = moreUtil.getInvaderNumFeature(self, nextState)
+        features["getHomeDist"] = moreUtil.getHomeDistFeature(self, nextState)
+        features["ghostDist"] = moreUtil.getGhostDist(self, nextState)
+        features["isPacman"] = moreUtil.getIsPacmanFeature(self, nextState)
+        features['foodLeft'] = moreUtil.getFoodLeftFeature(self, nextState)
+        features['carry'] = moreUtil.getCarryFeature(self)
+        features["closest-food"] = moreUtil.getClosestFoodFeature(self, gameState, nextState)
+
         features["bias"] = 1.0
-        
-        features['foodLeft'] = len(self.getFood(nextState).asList())
-
-        features['carry'] = self.additionalState.carry[self.index]
-
-        dist = closestFood((next_x, next_y), food, walls)
-        if dist is not None:
-            # make the distance a number less than one otherwise the update
-            # will diverge wildly
-            features["closest-food"] = float(dist) / (walls.width * walls.height)
         
         features.divideAll(10.0)
         return features
-        
-    def getInvadersDist(self,gameState):
-        myState = gameState.getAgentState(self.index)
-        myPos = myState.getPosition()
-        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-        if len(dists)==0 :
-            dists = [-1]
-        return dists
     
-    def getHomeDist(self,gameState):
-        middle = self.middle
-        bestv = 999999
-        myState = gameState.getAgentState(self.index)
-        if not myState.isPacman: return 0
-        pos1 = gameState.getAgentPosition(self.index)
-        walls = gameState.getWalls().asList()
-        
-        for i in range(16):
-            pos2 = (middle,i)
-            if not pos2 in walls:
-                tempv = self.getMazeDistance(pos1,pos2)
-                bestv = min(bestv,tempv)
-        
-        return bestv
+
   
-    def getGhostDist(self,gameState):
-        myState = gameState.getAgentState(self.index)
-        myPos = myState.getPosition()
-        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        invaders = [a for a in enemies if (not a.isPacman) and a.getPosition() != None]
-        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-        if len(dists)==0 :
-            dists = [-1]
-    
-        return dists
-  
-def closestFood(pos, food, walls):
-    """
-    closestFood -- this is similar to the function that we have
-    worked on in the search project; here its all in one place
-    """
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find a food at this location then exit
-        if food[pos_x][pos_y]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
-    # no food found
-    return None
