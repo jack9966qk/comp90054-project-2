@@ -97,7 +97,7 @@ class DummyAgent(CaptureAgent):
         
         self.weights = WEIGHTS
         self.QValues = util.Counter()
-        self.epsilon = 0.05
+        self.epsilon = 0.2
         self.gamma = 0.8
         self.alpha = 0.2
         self.discount = 0.9
@@ -173,22 +173,20 @@ class DummyAgent(CaptureAgent):
     # def getReward(self, gameState):
     #     return self.getScore(gameState)
     def getReward(self, state, action, nextState):
-        reward = nextState.getScore() - state.getScore()
-        reward -= 0.1 # time
         nx, ny = nextState.getAgentPosition(self.index)
         x, y = state.getAgentPosition(self.index)
         if (abs(nx - x) + abs(ny - y)) > 1: # check death
-            reward -= 10
+            return -10
+        if (nx, ny) == (x, y):
+            return -1
         isRed = state.isOnRedTeam(self.index)
         food = state.getBlueFood() if isRed else state.getRedFood()
         capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
         if food[nx][ny]:
-            reward += 1 # eat food
+            return 1 # eat food
         if (nx, ny) in capsule:
-            reward += 5 # eat capsule
-        if action == "stop":
-            return -1
-        return reward
+            return 5 # eat capsule
+        return 0
 
     def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
@@ -207,6 +205,7 @@ class DummyAgent(CaptureAgent):
         
         features.divideAll(10.0)
         return features
+
     
 
   
