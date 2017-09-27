@@ -17,14 +17,14 @@ import random, time, util
 from game import Directions, Actions
 import game
 import os
-from weightIO import saveWeights, loadWeights
+from weightIO import *
 from additionalState import AdditionalState
 
 WEIGHTS_FILENAME = "trainedWeights.pickle"
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):
-    WEIGHTS = loadWeights(WEIGHTS_FILENAME)
+    WEIGHTS = loadWeightsJson(WEIGHTS_FILENAME)
 else:
     WEIGHTS = util.Counter()
 
@@ -88,7 +88,12 @@ class DummyAgent(CaptureAgent):
         CaptureAgent.registerInitialState in captureAgents.py.
         '''
         CaptureAgent.registerInitialState(self, gameState)
+        self.start = gameState.getAgentPosition(self.index)
 
+        self.walls = gameState.getWalls()
+        self.size = (self.walls.width,self.walls.height)
+        self.middle = (self.size[0]/2) - (self.start[0]%2)
+        
         self.weights = WEIGHTS
         self.QValues = util.Counter()
         self.epsilon = 0.05
@@ -162,7 +167,7 @@ class DummyAgent(CaptureAgent):
     def final(self, gameState):
         CaptureAgent.final(self, gameState)
         # save updated weights to file
-        saveWeights(WEIGHTS, WEIGHTS_FILENAME)
+        saveWeightsJson(WEIGHTS, WEIGHTS_FILENAME)
 
     # def getReward(self, gameState):
     #     return self.getScore(gameState)
@@ -180,16 +185,26 @@ class DummyAgent(CaptureAgent):
             reward += 1 # eat food
         if (nx, ny) in capsule:
             reward += 5 # eat capsule
+        if action == "stop":
+            return -1
         return reward
 
     def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
+        myState = nextState.getAgentState(self.index)
         food = self.getFood(gameState)
         walls = gameState.getWalls()
         
         features = util.Counter()
         
         next_x, next_y = nextState.getAgentPosition(self.index)
+        
+        
+        features["invaderDist"] = min(self.getInvadersDist(nextState))
+        features["invaderNum"] = len(self.getInvadersDist(nextState))
+        features["getHomeDist"] = self.getHomeDist(nextState)
+        features["ghostDist"] = min(self.getGhostDist(nextState))
+        features["isPacman"] = myState.isPacman
         
         features["bias"] = 1.0
         
@@ -206,6 +221,43 @@ class DummyAgent(CaptureAgent):
         features.divideAll(10.0)
         return features
         
+    def getInvadersDist(self,gameState):
+        myState = gameState.getAgentState(self.index)
+        myPos = myState.getPosition()
+        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
+        if len(dists)==0 :
+            dists = [-1]
+        return dists
+    
+    def getHomeDist(self,gameState):
+        middle = self.middle
+        bestv = 999999
+        myState = gameState.getAgentState(self.index)
+        if not myState.isPacman: return 0
+        pos1 = gameState.getAgentPosition(self.index)
+        walls = gameState.getWalls().asList()
+        
+        for i in range(16):
+            pos2 = (middle,i)
+            if not pos2 in walls:
+                tempv = self.getMazeDistance(pos1,pos2)
+                bestv = min(bestv,tempv)
+        
+        return bestv
+  
+    def getGhostDist(self,gameState):
+        myState = gameState.getAgentState(self.index)
+        myPos = myState.getPosition()
+        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+        invaders = [a for a in enemies if (not a.isPacman) and a.getPosition() != None]
+        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
+        if len(dists)==0 :
+            dists = [-1]
+    
+        return dists
+  
 def closestFood(pos, food, walls):
     """
     closestFood -- this is similar to the function that we have
