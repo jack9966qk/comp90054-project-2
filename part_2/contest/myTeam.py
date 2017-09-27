@@ -19,6 +19,12 @@ import game
 import json
 import math
 weightFile = "weight.json"
+dirdict = {Directions.NORTH: (0, 1),
+Directions.SOUTH: (0, -1),
+Directions.EAST:  (1, 0),
+Directions.WEST:  (-1, 0)}
+
+dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 
 #################
 # Team creation #
@@ -84,26 +90,105 @@ class DummyAgent(CaptureAgent):
     self.weightDict = json.load(fo)
     fo.close()
     
+    self.probMap = []
+    self.probMap.append(util.Counter())
+    self.probMap.append(util.Counter())
+    
+    self.walls = gameState.getWalls()
+    self.size = (self.walls.width,self.walls.height)
+    
+    size = self.size
+
+    
+    
+    #util.pause()
     self.discount = 0.9
     self.roundcount = 0
+    self.middle = int(math.floor(self.start[0])/16+15)
+    self.patrol = [(self.middle,7),(self.middle,8)]
     
     self.distancer.getMazeDistances()
     mazeAction = {}
     self.allpos = []
-    self.walls = gameState.getWalls()
-    self.size = (self.walls.width,self.walls.height)
     self.allfood = []
+    foodList = self.getFood(gameState).asList()
     self.map = {}
     self.mapMST = {}
-    foodList = self.getFood(gameState).asList()
     self.maxMST = self.getMST(foodList)
+    
+    for i in range(size[0]):
+        for j in range(size[1]):
+            
+            if not self.walls[i][j]:
+                self.allpos.append((i,j))
+    
+    for pos in self.allpos:
+        self.probMap[0][pos]=0
+        self.probMap[1][pos]=0
+    
+    opp = self.getOpponents(gameState)
+    
+    self.probMap[0][gameState.getInitialAgentPosition(opp[0])]=1.0
+    self.probMap[1][gameState.getInitialAgentPosition(opp[1])]=1.0
     
     #print self.size
     #print self.allpos
     #print self.start
-    #util.pause()
+    util.pause()
     
     #os.system('PAUSE')
+    
+  def getProbMap(self,gameState):
+    opp=self.getOpponents(gameState)
+    selfpos = gameState.getAgentPosition(self.index)
+    noisyDist = gameState.getAgentDistances()
+    for i in range(2):
+        tempP = self.iniProbMap(self.allpos)
+        prevP = self.probMap[i]
+        for pos in self.allpos:
+            if prevP[pos]>0:
+                temp = prevP[pos]
+                tcount = 0
+                tpos = []
+                for dir in dirs:
+                    pos1 = (pos[0]+dir[0],pos[1]+dir[1])
+                    if pos1 in self.allpos:
+                        tcount+=1
+                        tpos.append(pos1)
+                for npos in tpos:
+                    tempP[npos]+= temp / tcount
+        sum=0
+        for pos in self.allpos:
+            trueD = util.manhattanDistance(selfpos,pos)
+            tempP[pos] *= gameState.getDistanceProb(trueD,noisyDist[opp[i]])
+            
+            sum+=tempP[pos]
+        if sum==0: 
+            sum=1
+            tempP = self.iniProbMap(self.allpos)
+            tempP[gameState.getInitialAgentPosition(opp[i])]=1
+        poso = gameState.getAgentPosition(opp[i])
+        if not poso == None:
+            sum=1
+            tempP = self.iniProbMap(self.allpos)
+            tempP[poso]=1
+        for pos in self.allpos:
+            tempP[pos] /= sum
+        self.probMap[i]=tempP
+    
+    return 0
+  
+  def iniProbMap(self,allpos):
+    temp = util.Counter()
+    for pos in allpos:
+        temp[pos]=0
+    return temp
+  
+  def drawProbMape(self,gameState):
+    self.debugClear()
+    for pos in self.allpos:
+        self.debugDraw([pos],[self.probMap[0][pos],self.probMap[1][pos],0])
+    return 0
   
   def getDistance(self,pos1,pos2):
     if self.map.has_key((pos1,pos2)) or self.map.has_key((pos2,pos1)):
@@ -162,7 +247,10 @@ class DummyAgent(CaptureAgent):
     
     print [self.getMod(gameState)]
     print zip(actions, values)
-    #util.pause()
+    print gameState.getAgentDistances()
+    self.getProbMap(gameState)
+    self.drawProbMape(gameState)
+    util.pause()
 
     return random.choice(bestActions)
 
@@ -191,6 +279,7 @@ class DummyAgent(CaptureAgent):
     features['isStop'] = action == "Stop"
     features['isNear'] = max([5-self.getTeamDist(successor),0])
     #features['isNear'] = 100/(self.getTeamDist(successor)+0.000001)
+    features['patrol'] = self.getPatrolDist(successor)
     return features
 
   def getWeights(self, gameState, action):
@@ -240,9 +329,15 @@ class DummyAgent(CaptureAgent):
     dist = self.getDistance(pos1,pos2)
     if self.roundcount<200: return 12
     return dist
+    
+  def getPatrolDist(self,gameState):
+    temp = 0
+    for pos in self.patrol:
+        temp+=self.getDistance(pos,gameState.getAgentPosition(self.index))
+    return temp
   
   def getHomeDist(self,gameState):
-    middle = int(math.floor(self.start[0])/15)
+    middle = self.middle
     bestv = 999999
     pos1 = gameState.getAgentPosition(self.index)
     walls = gameState.getWalls().asList()
@@ -254,14 +349,17 @@ class DummyAgent(CaptureAgent):
     return bestv
   
   def getMod(self,gameState):
-    temp = "offense"
-    if len(self.getFood(gameState).asList()) < 3:
-        temp = "backhome"
-    if self.getHomeDist(gameState)<self.getFoodValue(gameState):
-        temp = "backhome"
     myState = gameState.getAgentState(self.index)
     pos1 = gameState.getAgentPosition(self.index)
     opps = self.getOpponents(gameState)
+    temp = "offense"
+    if self.getTeam(gameState)[0] == self.index: 
+        temp = "patrol"
+    if len(self.getFood(gameState).asList()) < 3:
+        temp = "backhome"
+    #if self.getHomeDist(gameState)<self.getFoodValue(gameState) and abs(pos1[0]-self.start[0])>15:
+    #    temp = "backhome"
+    
     obs = False
     dist = []
     for opp in opps:
@@ -276,7 +374,7 @@ class DummyAgent(CaptureAgent):
             temp = "backhome"
             
     return temp
-    
+    return "patrol"
     return "offense"
     return "backhome"
     return "defense"

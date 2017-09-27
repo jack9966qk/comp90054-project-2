@@ -7,6 +7,7 @@
         "invaderDist": 0,
         "invaderNum": 0,
         "ghostDist": 1000,
+        "patrol":0,
         "isNear": -1,
         "isStop": -10
     }, 
@@ -18,6 +19,7 @@
         "invaderDist": 0,
         "invaderNum": 0,
         "ghostDist": 1000,
+        "patrol":0,
         "isNear": -10,
         "isStop" :-20
     }, 
@@ -25,11 +27,24 @@
         "food": 0, 
         "home": 0, 
         "foodLeft": 0, 
-        "isPacman": -1000, 
+        "isPacman": -10000, 
         "invaderDist": -10,
         "invaderNum": -1000,
         "ghostDist": 0,
+        "patrol":0,
         "isNear": -1,
         "isStop": -15
+    },
+    "patrol": {
+        "food": 0, 
+        "home": 0, 
+        "foodLeft": 0, 
+        "isPacman": -10000, 
+        "invaderDist": 0,
+        "invaderNum": 0,
+        "ghostDist": 0,
+        "patrol": -10,
+        "isNear": 0,
+        "isStop": 0
     }
 }
