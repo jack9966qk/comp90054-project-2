@@ -1,7 +1,7 @@
 {
     "backhome": {
         "food": 0, 
-        "home": -100, 
+        "home": -1000, 
         "foodLeft": 0, 
         "isPacman": 0, 
         "invaderDist": 0,
@@ -12,13 +12,13 @@
         "isStop": -10
     }, 
     "offense": {
-        "food": -2, 
+        "food": -50, 
         "home": 0, 
-        "foodLeft": -100, 
+        "foodLeft": -1000, 
         "isPacman": 0, 
         "invaderDist": 0,
         "invaderNum": 0,
-        "ghostDist": 1000,
+        "ghostDist": 10000,
         "patrol":0,
         "isNear": -10,
         "isStop" :-20

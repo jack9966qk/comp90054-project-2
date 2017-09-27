@@ -23,8 +23,12 @@ dirdict = {Directions.NORTH: (0, 1),
 Directions.SOUTH: (0, -1),
 Directions.EAST:  (1, 0),
 Directions.WEST:  (-1, 0)}
+probMap = []
+probMap.append(util.Counter())
+probMap.append(util.Counter())
 
-dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
+dirs1 = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
+dirs2 = [(0,0)]
 
 #################
 # Team creation #
@@ -90,9 +94,8 @@ class DummyAgent(CaptureAgent):
     self.weightDict = json.load(fo)
     fo.close()
     
-    self.probMap = []
-    self.probMap.append(util.Counter())
-    self.probMap.append(util.Counter())
+    
+    
     
     self.walls = gameState.getWalls()
     self.size = (self.walls.width,self.walls.height)
@@ -123,58 +126,58 @@ class DummyAgent(CaptureAgent):
                 self.allpos.append((i,j))
     
     for pos in self.allpos:
-        self.probMap[0][pos]=0
-        self.probMap[1][pos]=0
+        probMap[0][pos]=0
+        probMap[1][pos]=0
     
     opp = self.getOpponents(gameState)
     
-    self.probMap[0][gameState.getInitialAgentPosition(opp[0])]=1.0
-    self.probMap[1][gameState.getInitialAgentPosition(opp[1])]=1.0
+    probMap[0][gameState.getInitialAgentPosition(opp[0])]=1.0
+    probMap[1][gameState.getInitialAgentPosition(opp[1])]=1.0
     
     #print self.size
     #print self.allpos
     #print self.start
-    util.pause()
+    #util.pause()
     
     #os.system('PAUSE')
     
   def getProbMap(self,gameState):
     opp=self.getOpponents(gameState)
+    team = self.getTeam(gameState)
     selfpos = gameState.getAgentPosition(self.index)
     noisyDist = gameState.getAgentDistances()
+    if self.index == team[0]:
+        dirs = dirs1
+    else:
+        dirs = dirs2
     for i in range(2):
         tempP = self.iniProbMap(self.allpos)
-        prevP = self.probMap[i]
+        prevP = probMap[i]
         for pos in self.allpos:
             if prevP[pos]>0:
-                temp = prevP[pos]
-                tcount = 0
-                tpos = []
                 for dir in dirs:
                     pos1 = (pos[0]+dir[0],pos[1]+dir[1])
                     if pos1 in self.allpos:
-                        tcount+=1
-                        tpos.append(pos1)
-                for npos in tpos:
-                    tempP[npos]+= temp / tcount
+                        tempP[pos1] = 1
+                    
         sum=0
         for pos in self.allpos:
             trueD = util.manhattanDistance(selfpos,pos)
-            tempP[pos] *= gameState.getDistanceProb(trueD,noisyDist[opp[i]])
-            
+            prob1 = gameState.getDistanceProb(trueD,noisyDist[opp[i]])
+            prob2 = gameState.getDistanceProb(trueD+1,noisyDist[opp[i]])
+            prob3 = gameState.getDistanceProb(trueD-1,noisyDist[opp[i]])
+            prob = max([prob1,prob2,prob3])
+            if prob == 0:
+                tempP[pos] = 0
             sum+=tempP[pos]
         if sum==0: 
-            sum=1
             tempP = self.iniProbMap(self.allpos)
             tempP[gameState.getInitialAgentPosition(opp[i])]=1
         poso = gameState.getAgentPosition(opp[i])
         if not poso == None:
-            sum=1
             tempP = self.iniProbMap(self.allpos)
             tempP[poso]=1
-        for pos in self.allpos:
-            tempP[pos] /= sum
-        self.probMap[i]=tempP
+        probMap[i]=tempP
     
     return 0
   
@@ -187,7 +190,8 @@ class DummyAgent(CaptureAgent):
   def drawProbMape(self,gameState):
     self.debugClear()
     for pos in self.allpos:
-        self.debugDraw([pos],[self.probMap[0][pos],self.probMap[1][pos],0])
+        #self.debugDraw([pos],[probMap[0][pos],0,0])
+        self.debugDraw([pos],[probMap[0][pos],probMap[1][pos],0])
     return 0
   
   def getDistance(self,pos1,pos2):
@@ -250,7 +254,7 @@ class DummyAgent(CaptureAgent):
     print gameState.getAgentDistances()
     self.getProbMap(gameState)
     self.drawProbMape(gameState)
-    util.pause()
+    #util.pause()
 
     return random.choice(bestActions)
 
@@ -271,7 +275,7 @@ class DummyAgent(CaptureAgent):
     features["isPacman"] = myState.isPacman
     features["invaderDist"] = min(self.getInvadersDist(successor))
     features["invaderNum"] = len(self.getInvadersDist(successor))
-    features["ghostDist"] = min(self.getGhostDist(successor))<4
+    features["ghostDist"] = max([min(self.getGhostDist(successor))-10,2])
     features["home"] = self.getDistance(self.start,successor.getAgentPosition(self.index))
     #features["getHomeDist"] = self.getHomeDist(successor)
     features['food'] = self.getFoodValue(successor)
