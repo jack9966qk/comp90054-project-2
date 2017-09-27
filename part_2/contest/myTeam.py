@@ -14,7 +14,7 @@
 
 from captureAgents import CaptureAgent
 import random, time, util
-from game import Directions
+from game import Directions, Actions
 import game
 
 #################
@@ -72,18 +72,15 @@ class DummyAgent(CaptureAgent):
         CaptureAgent.registerInitialState in captureAgents.py.
         '''
         CaptureAgent.registerInitialState(self, gameState)
-
+        self.weights = util.Counter()
+        self.QValues = util.Counter()
+        self.epsilon = 0.05
+        self.gamma = 0.8
+        self.alpha = 0.2
         '''
         Your initialization code goes here, if you need any.
         '''
-    def __init__(self, epsilon=0.05, gamma=0.8, alpha=0.2, **args):
-        self.weights = util.Counter()
-        self.QValues = util.Counter()
-        self.epsilon = epsilon
-        self.gamma = gamma
-        self.alpha = alpha
-        CaptureAgent.__init__(self, **args)
-    
+
     def getQValue(self, state, action):
         sum = 0
         features = self.getFeatures(state, action)
@@ -117,15 +114,16 @@ class DummyAgent(CaptureAgent):
                 bestAction.append(action)
         return random.choice(bestAction)
 
-    def chooseAction(self, state, gameState):
+    def chooseAction(self, gameState):
          # Pick Action
         legalActions = gameState.getLegalActions(self.index)
+        state = None
         action = None
         if legalActions is not None:
             if util.flipCoin(self.epsilon):
                 action = random.choice(legalActions)
             else:
-                action = self.computeActionFromQValues(state)
+                action = self.computeActionFromQValues(state, gameState)
 
         return action
     
@@ -142,9 +140,9 @@ class DummyAgent(CaptureAgent):
     def getFeatures(self, state, action):
         gameState = self.getCurrentObservation()
         nextState = gameState.generateSuccessor(self.index, action)
-        food = self.getFood()
-        walls = self.getWalls()
-        oppo = self.getOpponents()
+        food = self.getFood(gameState)
+        walls = gameState.getWalls()
+        oppo = self.getOpponents(gameState)
         oppoPos = [gameState.getAgentPosition(i) for i in oppo]
         
         features = util.Counter()
@@ -153,7 +151,7 @@ class DummyAgent(CaptureAgent):
         
         features["bias"] = 1.0
         
-        features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
+   #     features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
 
         # if there is no danger of ghosts then add the food feature
         if not features["#-of-ghosts-1-step-away"] and food[next_x][next_y]:
