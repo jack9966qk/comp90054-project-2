@@ -18,6 +18,7 @@ from game import Directions, Actions
 import game
 import os
 from weightIO import saveWeights, loadWeights
+from additionalState import AdditionalState
 
 WEIGHTS_FILENAME = "trainedWeights.pickle"
 
@@ -49,7 +50,12 @@ def createTeam(firstIndex, secondIndex, isRed,
   """
 
   # The following line is an example only; feel free to change it.
-  return [eval(first)(firstIndex), eval(second)(secondIndex)]
+  additionalState = AdditionalState(isRed, [firstIndex, secondIndex])
+  firstAgent = eval(first)(firstIndex)
+  secondAgent = eval(second)(secondIndex)
+  firstAgent.setAdditionalState(additionalState)
+  secondAgent.setAdditionalState(additionalState)
+  return [firstAgent, secondAgent]
 
 ##########
 # Agents #
@@ -130,8 +136,7 @@ class DummyAgent(CaptureAgent):
         # Pick Action
         prev = self.getPreviousObservation()
         if prev:
-            reward = gameState.getScore()-prev.getScore()
-            reward -= 0.1
+            reward = self.getReward(prev, self.lastAction, gameState)
             self.update(prev, self.lastAction, gameState, reward)
         legalActions = gameState.getLegalActions(self.index)
         state = None
@@ -142,6 +147,7 @@ class DummyAgent(CaptureAgent):
             else:
                 action = self.computeActionFromQValues(gameState)
         self.lastAction = action
+        self.additionalState.update(gameState, self.index, action)
         return action
     
     def update(self, state, action, nextState, reward):
@@ -151,15 +157,31 @@ class DummyAgent(CaptureAgent):
         for feature, value in features.iteritems():
             self.weights[feature] += self.alpha * diff * features[feature]
         
-        
+    def setAdditionalState(self, additionalState):
+        self.additionalState = additionalState
 
     def final(self, gameState):
         CaptureAgent.final(self, gameState)
         # save updated weights to file
         saveWeights(WEIGHTS, WEIGHTS_FILENAME)
 
-    def getReward(self, gameState):
-        return self.getScore(gameState)
+    # def getReward(self, gameState):
+    #     return self.getScore(gameState)
+    def getReward(self, state, action, nextState):
+        reward = nextState.getScore() - state.getScore()
+        reward -= 0.1 # time
+        nx, ny = nextState.getAgentPosition(self.index)
+        x, y = state.getAgentPosition(self.index)
+        if (abs(nx - x) + abs(ny - y)) > 1: # check death
+            reward -= 10
+        isRed = state.isOnRedTeam(self.index)
+        food = state.getBlueFood() if isRed else state.getRedFood()
+        capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
+        if food[nx][ny]:
+            reward += 1 # eat food
+        if (nx, ny) in capsule:
+            reward += 5 # eat capsule
+        return reward
 
     def getFeatures(self, gameState, action):
         nextState = gameState.generateSuccessor(self.index, action)
@@ -175,6 +197,8 @@ class DummyAgent(CaptureAgent):
         features["bias"] = 1.0
         
         features['foodLeft'] = len(self.getFood(nextState).asList())
+
+        features['carry'] = self.additionalState.carry[self.index]
         
    #     features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in Actions.getLegalNeighbors(g, walls) for g in oppoPos)
 
