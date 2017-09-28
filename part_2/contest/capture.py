@@ -987,10 +987,11 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
       import time, cPickle, game
       #fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
       #f = file(fname, 'w')
-      agentsToDump = [game.Agent() for a in agents]
-      for i in range(len(agentsToDump)):
-        agentsToDump[i].index = agents[i].index
-      components = {'layout': layout, 'agents': agentsToDump, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
+      
+      # agentsToDump = [game.Agent() for a in agents]
+      # for i in range(len(agentsToDump)):
+        # agentsToDump[i].index = agents[i].index
+      components = {'layout': layout, 'agents': agents, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
       #f.close()
       print "recorded"
       g.record = cPickle.dumps(components)
