@@ -7,6 +7,8 @@ import textDisplay
 from capture import CaptureRules
 from rlTrain import extractFeatures, train
 import imp
+from multiprocessing import Pool
+from functools import partial
 
 
 
@@ -44,16 +46,30 @@ def recoverFromReplay(replay):
     for i in blueIndices: sequences[i].append(outcome(False, winner))
     return sequences, replay["agents"]
 
-def simulateGames(redTeam, blueTeam, numGames=1):
+# single threaded game simulation, writes replay file to directory
+def runGames(redTeam, blueTeam, dir, numGames, prefix):
+    call(["python", "./capture.py",
+          "-r", redTeam, "-b", blueTeam,
+          "-q", "-n", str(numGames), "--record={}/{}replay".format(dir, prefix)])
+    print("{} finished".format(prefix))
+
+def simulateGames(redTeam, blueTeam, numRuns=1, numGamesPerRun=1, numProcesses=20):
+    
     dir = "replay/" + time.strftime("%b-%d-%H-%M-%S", time.localtime(time.time()))
     if not os.path.exists(dir):
         os.mkdir(dir)
-    call(["python", "./capture.py",
-          "-r", redTeam, "-b", blueTeam,
-          "-q", "-n", str(numGames), "--record={}/replay".format(dir)])
-    # call(["python", "./capture.py",
-    #       "-r", "recorderTeam", "-b", "recorderTeam",
-    #       "-q", "-n", str(numGames)])
+    
+    pool = Pool(processes=numProcesses)
+    runFunc = partial(runGames, redTeam, blueTeam, dir, numGamesPerRun)
+
+    argsIter = [ "run{:2d}_".format(i) for i in range(numRuns) ]
+    for args in argsIter: print(args)
+    for i in pool.imap_unordered(runFunc, argsIter):
+        print(i)
+    # pool.join()
+    print("all runs finished")
+
+    # all games finished, load data from replay file
     data = []
     for replayFilename in os.listdir(dir):
         if replayFilename.endswith("cpickle"):
@@ -95,7 +111,7 @@ def getReward(state, action, nextState, agent):
 imp.load_source("player0", "baselineTeam.py")
 imp.load_source("player1", "baselineTeam.py")
 
-data = simulateGames("baselineTeam", "baselineTeam", numGames=1)
+data = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=20, numRuns=20)
 instances = addLabels(data)
 features, actions, labels = makeTrainingSet(instances)
 weight = train(features, actions, labels)
