@@ -1,13 +1,7 @@
-def extractFeatures(history):
-    """
-    input - iterator of gameStates
-    output - iterator of features for each state
-    """
+def extractFeatures(state, action, nextState, agent):
+    # return features of state
     pass
 
-def train(features, labels):
-    """
-    input - features and labels
-    output - weights as an object
-    """
+def train(features, actions, labels):
+    # return trained weights
     pass

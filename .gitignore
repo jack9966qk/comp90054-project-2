@@ -1,3 +1,4 @@
 *.pyc
 fast-downward/
 *.pickle
+*.cpickle
