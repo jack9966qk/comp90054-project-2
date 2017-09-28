@@ -45,7 +45,7 @@ class PacmanEnv(object):
             observation (object): The initial observation of the space. Initial reward is assumed to be 0.
         """
         self.gameProcess = subprocess.Popen(["python", "capture.py",
-                                             "-r", "envTeam", "-b", "baselineTeam", "-q", "-z", "0.5"])
+                                             "-r", "envTeam", "-b", "baselineTeam", "-z", "0.5"])
         # print("ENV WAITING FOR CONNECTION")
         self.conn, _ = self.socket.accept()
         observation = network.receive(self.conn)
