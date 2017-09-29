@@ -112,16 +112,17 @@ def addFeaturesOneGame(sequences, agents):
         features = extractFeatures(agent, states, actions)
         seqsWithFeat[agent.index] = zip(states, actions, features)
 
-imp.load_source("player0", "baselineTeam.py")
-imp.load_source("player1", "baselineTeam.py")
+if __name__ == "__main__":
+    imp.load_source("player0", "baselineTeam.py")
+    imp.load_source("player1", "baselineTeam.py")
 
-dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
-# all games finished, load data from replay files
-replayData = loadReplayFiles(dir)
-replayDataWithFeat = addFeatures(replayData)
-instances = addLabels(replayDataWithFeat)
-features, actions, labels = makeTrainingSet(instances)
-weight = train(features, actions, labels)
+    dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
+    # all games finished, load data from replay files
+    replayData = loadReplayFiles(dir)
+    replayDataWithFeat = addFeatures(replayData)
+    instances = addLabels(replayDataWithFeat)
+    features, actions, labels = makeTrainingSet(instances)
+    weight = train(features, actions, labels)
 
 # # save weight
 # with open(WEIGHT_FILENAME, 'w') as f:

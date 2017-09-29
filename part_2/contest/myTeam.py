@@ -126,6 +126,7 @@ class DummyAgent(CaptureAgent):
     def evaluate(self,gameState,action):
         features = self.getFeatures(gameState, action)
         weights = self.weights
+        print features
         return features * weights
         
         
@@ -211,7 +212,7 @@ class DummyAgent(CaptureAgent):
         
         features["bias"] = 1.0
         
-        features.divideAll(10.0)
+        #features.divideAll(10.0)
         return features
 
     

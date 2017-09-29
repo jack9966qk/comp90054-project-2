@@ -23,8 +23,8 @@ def getInvaderDist(agent, gameState):
         dists = [0]
     return dists
 
-def getHomeDist(agent, gameState):
-    middle = agent.middle
+def getHomeDist(tool,agent,gameState):
+    middle = tool.middle
     bestv = 999999
     myState = gameState.getAgentState(agent.index)
     if not myState.isPacman: return 0
@@ -65,8 +65,8 @@ def getInvaderDistFeature(agent, nextState):
 def getInvaderNumFeature(agent, nextState):
     return len(getInvaderDist(agent, nextState))
 
-def getHomeDistFeature(agent, nextState):
-    return getHomeDist(agent, nextState)
+def getHomeDistFeature(tool,agent, nextState):
+    return getHomeDist(tool,agent, nextState)
 
 def getGhostDistFeature(agent, nextState):
     return min(getGhostDist(agent, nextState))
@@ -136,9 +136,10 @@ def getClosestFoodFeature(agent, gameState, nextState):
     walls = gameState.getWalls()
     next_x, next_y = nextState.getAgentPosition(agent.index)
     dist = closestFood((next_x, next_y), food, walls)
-    if dist is not None:
+    #if dist is not None:
         # make the distance a number less than one otherwise the update
         # will diverge wildly
         #return float(dist ** 2) / (walls.width * walls.height)
-        return dist
+    if dist == None : return 0
+    return dist
         

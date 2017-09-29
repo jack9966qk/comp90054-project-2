@@ -1,5 +1,6 @@
 import sys
 import util
+import featuresTool
 
 alpha = 0.1 # learning rate
 
@@ -21,10 +22,23 @@ def extractFeatures(agent, states, actions):
               actions[-1] = None
     return - list of features corresponding to each given state
     """
-    pass
+    #print states
+    
+    tool = featuresTool.featuresTool()
+    tool.initGame(agent,states[0])
+    
+    features = []
+    
+    for i in range(len(states)-1):
+        features.append(tool.getTrainSet(agent,states[i],actions[i],None))
+    
+    features.append([0])
+    
+    return features
 
-def train(features, actions, labels, model):
+def train(features, actions, labels, model = "Linear"):
     # return trained weights
+    return 0
     if model == "Linear":
         return trainLinear(features, labels)
     else:

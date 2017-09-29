@@ -56,7 +56,7 @@ class featuresTool():
             self.dict = tdict
             
     def initGame(self,agent,gameState):
-        if not agent.index == agent.getTeam(gameState)[0]: return
+        #if not agent.index == agent.getTeam(gameState)[0]: return
         
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
@@ -104,11 +104,15 @@ class featuresTool():
                             tempP.append(npos)
                 self.probMap[idx]=tempP
                         
+            
         for i in opp:
             tempP = self.probMap[i]
             for pos in tempP:
                 trueD = util.manhattanDistance(selfpos,pos)
-                prob = gameState.getDistanceProb(trueD,noisyDist[i])
+                prob1 = gameState.getDistanceProb(trueD,noisyDist[i])
+                prob2 = gameState.getDistanceProb(trueD+1,noisyDist[i])
+                prob3 = gameState.getDistanceProb(trueD-1,noisyDist[i])
+                prob = max([prob1,prob2,prob3])
                 if prob == 0:tempP.remove(pos)
             self.probMap[i] = tempP
                     
@@ -134,9 +138,9 @@ class featuresTool():
     def getFeatures(self,agent,gameState,action,successor = None):
         features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
-        self.updateProbMap(agent,gameState)
+        #self.updateProbMap(agent,gameState)
         #print self.probMap[self.opp[0]]
-        self.drawProbMap(agent,gameState)
+        #self.drawProbMap(agent,gameState)
         
         for line in self.dict:
             features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
@@ -147,6 +151,15 @@ class featuresTool():
         temp = []
         for line in self.dict:
             temp.append(featrues[line])
+        return temp
+        
+    def getTrainSet(self,agent,gameState,action,successor):
+        if not gameState == None:
+            fea = self.getFeatures(agent,gameState,action,successor)
+        fea = util.Counter()
+        temp = []
+        for line in self.dict:
+            temp.append(fea[line])
         return temp
         
     def getClostestFoodDist(self,agent,gameState,action,successor):
@@ -168,7 +181,7 @@ class featuresTool():
         return int(gameState.getAgentState(self.mate[0]).isPacman)
         
     def getHomeDist(self,agent,gameState,action,successor):
-        return moreUtil.getHomeDistFeature(agent, successor)
+        return moreUtil.getHomeDistFeature(self,agent, successor)
         
     def getGhost1Dist(self,agent,gameState,action,successor):
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0])
