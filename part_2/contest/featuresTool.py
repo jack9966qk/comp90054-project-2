@@ -1,6 +1,7 @@
 
 import moreUtil
 import util
+import IOutil
 allDict = [
 'WallGrid',
 'TeamFoodGrid',
@@ -20,15 +21,28 @@ allDict = [
 'TeamCapsule',
 'OpponentCapsule',
 
-'ClostFoodDistance',
-'FoodLeft',
+'ClostFoodDist',
+'TeamFoodLeft',
+'OpponentFoodLeft',
 'InvaderDist',
 'HomeDist',
 'Ghost1Dist',
 'Ghost2Dist'
 ]
 
-FileName = ""
+
+tdict = [
+    'ClostestFoodDist',
+    'TeamFoodLeft',
+    'OpponentFoodLeft',
+    'HomeDist',
+    'TeamDist',
+    'IsPacman',
+    'TeamIsPacman'
+#    'Carry'
+]
+
+FileName = "Fdist.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 
 
@@ -38,8 +52,9 @@ class featuresTool():
         self.dict = dict
         
         if not dict:
-            self.dict = []
-        
+            #self.dict = IOutil.loadFile(FileName)
+            self.dict = tdict
+            
     def initGame(self,agent,gameState):
         if not agent.index == agent.getTeam(gameState)[0]: return
         
@@ -51,6 +66,7 @@ class featuresTool():
         self.start = agent.start[0]
         self.middle = (self.size[0]/2) - (self.start%2)
         self.team = agent.getTeam(gameState)
+        self.mate = [i for i in self.team if not i ==agent.index]
         self.opp = agent.getOpponents(gameState)
         self.teamNum = gameState.getNumAgents()
         self.lastidx = None
@@ -115,11 +131,11 @@ class featuresTool():
         agent.debugDraw(self.probMap[self.opp[0]],[1,0,0])
         return 0
     
-    def getFeatures(self,agent,gameState,action):
+    def getFeatures(self,agent,gameState,action,successor = None):
         features = util.Counter()
-        successor = gameState.generateSuccessor(agent.index, action)
+        if successor == None :successor = gameState.generateSuccessor(agent.index, action)
         self.updateProbMap(agent,gameState)
-        print self.probMap[self.opp[0]]
+        #print self.probMap[self.opp[0]]
         self.drawProbMap(agent,gameState)
         
         for line in self.dict:
@@ -127,11 +143,29 @@ class featuresTool():
             
         return features
         
-    def getClostFoodDistance(self,agent,gameState,action,successor):
+    def getTrainSet(self,featrues):
+        temp = []
+        for line in self.dict:
+            temp.append(featrues[line])
+        return temp
+        
+    def getClostestFoodDist(self,agent,gameState,action,successor):
         return moreUtil.getClosestFoodFeature(agent, gameState, successor)
         
-    def getFoodLeft(self,agent,gameState,action,successor):
+    def getTeamFoodLeft(self,agent,gameState,action,successor):
         return moreUtil.getFoodLeftFeature(agent, successor)
+    
+    def getOpponentFoodLeft(self,agent,gameState,action,successor):
+        return len(agent.getFoodYouAreDefending(successor).asList())
+        
+    def getTeamDist(self,agent,gameState,action,successor):
+        return agent.getMazeDistance(gameState.getAgentPosition(self.team[0]), gameState.getAgentPosition(self.team[1]))
+        
+    def getIsPacman(self,agent,gameState,action,successor):
+        return int(gameState.getAgentState(agent.index).isPacman)
+    
+    def getTeamIsPacman(self,agent,gameState,action,successor):
+        return int(gameState.getAgentState(self.mate[0]).isPacman)
         
     def getHomeDist(self,agent,gameState,action,successor):
         return moreUtil.getHomeDistFeature(agent, successor)
@@ -142,5 +176,6 @@ class featuresTool():
     def getGhost2Dist(self,agent,gameState,action,successor):
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
         
-        
+    def getCarry(self,agent,gameState,action,successor):
+        return moreUtil.getCarryFeature(agent)
         

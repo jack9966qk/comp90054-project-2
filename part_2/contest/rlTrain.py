@@ -3,8 +3,11 @@ import util
 
 alpha = 0.1 # learning rate
 
-def extractFeatures(state, action, nextState, agent):
+def extractFeatures(state, action, nextState, agent,featureTool):
     # return features of state
+    temp = featureTool.getFeatures(agent,state,action,nextState)
+    res = [temp[line] for line in featureTool.dict]
+    return temp
     pass
 
 def train(features, actions, labels, model):

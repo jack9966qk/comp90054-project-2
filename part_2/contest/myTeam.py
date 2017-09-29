@@ -29,7 +29,7 @@ fdict = [
 'ClostFoodDistance',
 'FoodLeft'
 ]
-features = featuresTool.featuresTool(fdict)
+features = featuresTool.featuresTool()
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):

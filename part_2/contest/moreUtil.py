@@ -50,12 +50,14 @@ def getGhostDist(agent, gameState):
 
     return dists
     
-def getGhostDistFeature(featruesTool,agent, successor,self.opp)
+def getGhostDistFeature(featruesTool,agent, successor,opp):
     allpos = featruesTool.probMap[opp]
+    myPos = myState.getPosition()
     minv = 999999
     
     for pos in allpos:
-        minv = min(minv,)
+        minv = min(minv,agent.getMazeDistance(myPos, pos))
+    return minv
 
 def getInvaderDistFeature(agent, nextState):
     return min(getInvaderDist(agent, nextState))
@@ -137,5 +139,6 @@ def getClosestFoodFeature(agent, gameState, nextState):
     if dist is not None:
         # make the distance a number less than one otherwise the update
         # will diverge wildly
-        return float(dist ** 2) / (walls.width * walls.height)
+        #return float(dist ** 2) / (walls.width * walls.height)
+        return dist
         

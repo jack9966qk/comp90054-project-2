@@ -97,7 +97,9 @@ def addLabels(data, discount=0.9):
     return instances
 
 def makeTrainingSet(instances):
-    features = [extractFeatures(s, a, ns, ag) for s, a, ns, ag, _ in instances]
+    featureTool = featuresTool()
+    featureTool.initGame(instances[0][1],instances[0][0])
+    features = [extractFeatures(s, a, ns, ag,featureTool) for s, a, ns, ag, _ in instances]
     actions = [act for _, act, _, _, _ in instances]
     labels = [qVal for _, _, _, _, qVal in instances]
     return features, actions, labels
