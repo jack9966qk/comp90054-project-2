@@ -85,7 +85,7 @@ def addLabels(data, discount=0.9):
             idx = agent.index
             seq = seqs[idx]
             vals = [0 for _ in seq]
-            for i in list(range(len(seq)))[::-1]:
+            for i in list(range(len(seq)-1))[::-1]:
                 state, action, features = seq[i]
                 nextState = seq[i+1][0]
                 r = reward.getReward(agent, state, action, nextState)
@@ -111,11 +111,11 @@ def addFeaturesOneGame(sequences, agents):
         actions = [a for _, a in seq]
         features = extractFeatures(agent, states, actions)
         seqsWithFeat[agent.index] = zip(states, actions, features)
+    return seqsWithFeat, agents
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
     imp.load_source("player1", "baselineTeam.py")
-
     dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     replayData = loadReplayFiles(dir)
