@@ -1,7 +1,8 @@
 import sys
 import util
 import featuresTool
-
+import numpy as np
+from sklearn.linear_model import LinearRegression
 alpha = 0.1 # learning rate
 
 # def extractFeatures(state, action, nextState, agent,featureTool):
@@ -38,7 +39,6 @@ def extractFeatures(agent, states, actions):
 
 def train(features, actions, labels, model = "Linear"):
     # return trained weights
-    return 0
     if model == "Linear":
         return trainLinear(features, labels)
     else:
@@ -46,11 +46,38 @@ def train(features, actions, labels, model = "Linear"):
         sys.exit(1)
 
 def trainLinear(features, labels):
+    '''
     # initialize weights
-    weights = util.Counter()
+    weights = [0.1 for i in range(len(features[0]))]
     # stochastic gradient descent
-    for i in len(labels):
-        diff = labels[i] - features[i] * weights
-        for feature, value in features[i].iteritems():
-            weights[feature] += alpha * diff * value
-    return weights
+    #print len(labels
+    for i in range(len(labels)):
+        feature = features[i]
+        diff = labels[i] - times(feature,weights)#features[i] * weights
+        for j in range(len(feature)):
+            weights[j] += alpha * diff * feature[j]
+       # for feature, value in features[i].iteritems():
+       #     weights[feature] += alpha * diff * value
+        print weights
+        util.pause()
+    '''
+    
+    afeatures = np.array(features)
+    alabels = np.array(labels)
+    
+    linreg = LinearRegression()
+
+    linreg.fit(afeatures, alabels)
+    
+    weights = linreg.coef_
+    print weights
+    return np.ndarray.tolist(weights)
+    
+def times(a,b):
+    temp = 0
+    for i in range(len(a)):
+        temp+=a[i]*b[i]
+    return temp
+    
+    
+    

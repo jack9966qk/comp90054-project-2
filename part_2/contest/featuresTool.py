@@ -154,9 +154,10 @@ class featuresTool():
         return temp
         
     def getTrainSet(self,agent,gameState,action,successor):
-        if not gameState == None:
-            fea = self.getFeatures(agent,gameState,action,successor)
         fea = util.Counter()
+        if not type(gameState) == str:
+            fea = self.getFeatures(agent,gameState,action,successor)
+        
         temp = []
         for line in self.dict:
             temp.append(fea[line])

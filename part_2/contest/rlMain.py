@@ -10,10 +10,10 @@ from rlTrain import extractFeatures, train
 import imp
 from multiprocessing import Pool
 from functools import partial
+import IOutil
 
 
-
-WEIGHT_FILENAME = "rlWeights.pickle"
+WEIGHT_FILENAME = "rlWeights.json"
 
 def recoverFromReplay(replay):
     sequences = {}
@@ -116,14 +116,24 @@ def addFeaturesOneGame(sequences, agents):
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
     imp.load_source("player1", "baselineTeam.py")
+    
     dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
     features, actions, labels = makeTrainingSet(instances)
+    
+    #IOutil.saveFile("tfeatures.json",features)
+    #IOutil.saveFile("tactions.json",actions)
+    #IOutil.saveFile("tlabels.json",labels)
+    
+    #features = IOutil.loadFile("tfeatures.json")
+    #actions = IOutil.loadFile("tactions.json")
+    #labels = IOutil.loadFile("tlabels.json")
     weight = train(features, actions, labels)
 
 # # save weight
-# with open(WEIGHT_FILENAME, 'w') as f:
-#     pickle.dump(weight, f)
+    IOutil.saveFile(WEIGHT_FILENAME,weight)
+ #   with open(WEIGHT_FILENAME, 'w') as f:
+ #       pickle.dump(weight, f)

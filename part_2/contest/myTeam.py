@@ -22,14 +22,15 @@ import moreUtil
 from additionalState import AdditionalState
 import featuresTool
 
-WEIGHTS_FILENAME = "trainedWeights.pickle"
+#WEIGHTS_FILENAME = "trainedWeights.pickle"
+WEIGHTS_FILENAME = 'rlWeights.json'
 trainSet = []
 labelSet = []
 fdict = [
 'ClostFoodDistance',
 'FoodLeft'
 ]
-features = featuresTool.featuresTool()
+featuresTool = featuresTool.featuresTool()
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):
@@ -107,15 +108,18 @@ class DummyAgent(CaptureAgent):
         self.middle = (self.size[0]/2) - (self.start[0]%2)
         
         
-        self.weights = WEIGHTS
+        #self.weights = WEIGHTS
         self.QValues = util.Counter()
         self.epsilon = 0.2
         self.gamma = 0.8
         self.alpha = 0.05
         self.discount = 0.9
         
-        
-        features.initGame(self,gameState)
+        self.weights = util.Counter()
+        featuresTool.initGame(self,gameState)
+        #print WEIGHTS
+        for i in range(len(featuresTool.dict)):
+            self.weights[featuresTool.dict[i]] = WEIGHTS[i]
         
         util.pause
         '''
@@ -124,20 +128,21 @@ class DummyAgent(CaptureAgent):
 
         
     def evaluate(self,gameState,action):
-        features = self.getFeatures(gameState, action)
+        #features = self.getFeatures(gameState, action)
+        features = featuresTool.getFeatures(self,gameState,action)
         weights = self.weights
-        print features
+        #print features
         return features * weights
         
         
     def chooseAction(self, gameState):
         # Pick Action
         prev = self.getPreviousObservation()
-        if prev:
-            reward = self.getReward(prev, self.lastAction, gameState)
+        #if prev:
+        #    reward = self.getReward(prev, self.lastAction, gameState)
 #            self.update(prev, self.lastAction, gameState, reward)
-        else:
-            reward = 0
+        #else:
+        #    reward = 0
         
         actions = gameState.getLegalActions(self.index)
         values = [self.evaluate(gameState, a) for a in actions]
@@ -146,14 +151,14 @@ class DummyAgent(CaptureAgent):
         
         action = random.choice(bestActions)
         self.lastAction = action
-        features1 = self.getFeatures(gameState,action,sel = True)
+        #features1 = self.getFeatures(gameState,action,sel = True)
         
-        tfeatures = features.getFeatures(self,gameState,action)
-        print features1
-        print tfeatures
+        #tfeatures = features.getFeatures(self,gameState,action)
+        #print features1
+        #print tfeatures
         #util.pause()
-        trainSet.append(moreUtil.getTrainSet(features1))
-        labelSet.append(reward)
+        #trainSet.append(moreUtil.getTrainSet(features1))
+        #labelSet.append(reward)
         return action
     
         

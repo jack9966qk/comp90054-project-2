@@ -258,15 +258,15 @@ class DummyAgent(CaptureAgent):
     maxValue = max(values)
     bestActions = [a for a, v in zip(actions, values) if v == maxValue]
     
-    print [self.getMod(gameState)]
-    print zip(actions, values)
-    print gameState.getAgentDistances()
+   # print [self.getMod(gameState)]
+   # print zip(actions, values)
+   # print gameState.getAgentDistances()
     action = random.choice(bestActions)
     
-    tfeatures = features.getFeatures(self,gameState,action)
-    trainSet.append(features.getTrainSet(tfeatures))
-    reward =1
-    labelSet.append(reward)
+   # tfeatures = features.getFeatures(self,gameState,action)
+   # trainSet.append(features.getTrainSet(tfeatures))
+   # reward =1
+   # labelSet.append(reward)
     
     #self.getProbMap(gameState)
     #self.drawProbMape(gameState)
