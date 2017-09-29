@@ -18,9 +18,7 @@ WEIGHT_FILENAME = "rlWeights.pickle"
 def recoverFromReplay(replay):
     sequences = {}
     for agent in replay["agents"]:
-        print(agent.index)
         sequences[agent.index] = []
-    print(sequences)
     gameStates = []
     actions = []
     display = textDisplay.NullGraphics()
@@ -43,8 +41,8 @@ def recoverFromReplay(replay):
             return "Win" if winner == "Red" else "Lose"
         else:
             return "Win" if winner == "Blue" else "Lose"
-    for i in redIndices: sequences[i].append(outcome(True, winner))
-    for i in blueIndices: sequences[i].append(outcome(False, winner))
+    for i in redIndices: sequences[i].append((outcome(True, winner), None))
+    for i in blueIndices: sequences[i].append((outcome(False, winner), None))
     return sequences, replay["agents"]
 
 # single threaded game simulation, writes replay file to directory
@@ -69,8 +67,9 @@ def simulateGames(redTeam, blueTeam, numRuns=1, numGamesPerRun=1, numProcesses=2
         print(i)
     # pool.join()
     print("all runs finished")
+    return dir
 
-    # all games finished, load data from replay file
+def loadReplayFiles(dir):
     data = []
     for replayFilename in os.listdir(dir):
         if replayFilename.endswith("cpickle"):
@@ -81,35 +80,46 @@ def simulateGames(redTeam, blueTeam, numRuns=1, numGamesPerRun=1, numProcesses=2
 
 def addLabels(data, discount=0.9):
     instances = []
-    for game in data:
-        seqs, agents = game
+    for seqs, agents in data:
         for agent in agents:
             idx = agent.index
             seq = seqs[idx]
             vals = [0 for _ in seq]
-            for i in range(len(seq)-2, -1, -1):
-                state, action = seq[i]
-                nextState = seq[i+1] if seq[i+1] in ["Tie", "Win", "Lose"] else seq[i+1][0]
+            for i in list(range(len(seq)))[::-1]:
+                state, action, features = seq[i]
+                nextState = seq[i+1][0]
                 r = reward.getReward(agent, state, action, nextState)
                 qVal = r + discount * vals[i+1]
                 vals[i] = qVal
-                instances.append((state, action, nextState, agent, qVal))
+                instances.append((state, action, features, nextState, agent, qVal))
     return instances
 
 def makeTrainingSet(instances):
-    featureTool = featuresTool()
-    featureTool.initGame(instances[0][1],instances[0][0])
-    features = [extractFeatures(s, a, ns, ag,featureTool) for s, a, ns, ag, _ in instances]
-    actions = [act for _, act, _, _, _ in instances]
-    labels = [qVal for _, _, _, _, qVal in instances]
+    features = [feat for _, _, feat, _, _, _ in instances]
+    actions = [act for _, act, _, _, _, _ in instances]
+    labels = [qVal for _, _, _, _, _, qVal in instances]
     return features, actions, labels
 
+def addFeatures(replayData):
+    return [addFeaturesOneGame(seqs, ag) for seqs, ag in replayData]
+
+def addFeaturesOneGame(sequences, agents):
+    seqsWithFeat = {}
+    for agent in agents:
+        seq = sequences[agent.index]
+        states = [s for s, _ in seq]
+        actions = [a for _, a in seq]
+        features = extractFeatures(agent, states, actions)
+        seqsWithFeat[agent.index] = zip(states, actions, features)
 
 imp.load_source("player0", "baselineTeam.py")
 imp.load_source("player1", "baselineTeam.py")
 
-data = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=20, numRuns=20)
-instances = addLabels(data)
+dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
+# all games finished, load data from replay files
+replayData = loadReplayFiles(dir)
+replayDataWithFeat = addFeatures(replayData)
+instances = addLabels(replayDataWithFeat)
 features, actions, labels = makeTrainingSet(instances)
 weight = train(features, actions, labels)
 

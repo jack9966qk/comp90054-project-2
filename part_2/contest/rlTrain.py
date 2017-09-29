@@ -3,11 +3,24 @@ import util
 
 alpha = 0.1 # learning rate
 
-def extractFeatures(state, action, nextState, agent,featureTool):
-    # return features of state
-    temp = featureTool.getFeatures(agent,state,action,nextState)
-    res = [temp[line] for line in featureTool.dict]
-    return temp
+# def extractFeatures(state, action, nextState, agent,featureTool):
+#     # return features of state
+#     temp = featureTool.getFeatures(agent,state,action,nextState)
+#     res = [temp[line] for line in featureTool.dict]
+#     return temp
+#     pass
+
+def extractFeatures(agent, states, actions):
+    """
+    Extract features of a game for a agent
+    agent - CaptureAgent object
+    states - list of states of that agent in the game,
+             states[0] is the initial state,
+             states[-1] is the outcome (one of "Win", "Lose", "Tie")
+    actions - list of actions the agent performed at each corresponding state
+              actions[-1] = None
+    return - list of features corresponding to each given state
+    """
     pass
 
 def train(features, actions, labels, model):
