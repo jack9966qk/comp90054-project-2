@@ -4,6 +4,7 @@ import os
 import cPickle
 import time
 import textDisplay
+import reward
 from capture import CaptureRules
 from rlTrain import extractFeatures, train
 import imp
@@ -89,8 +90,8 @@ def addLabels(data, discount=0.9):
             for i in range(len(seq)-2, -1, -1):
                 state, action = seq[i]
                 nextState = seq[i+1] if seq[i+1] in ["Tie", "Win", "Lose"] else seq[i+1][0]
-                reward = getReward(state, action, nextState, agent)
-                qVal = reward + discount * vals[i+1]
+                r = reward.getReward(agent, state, action, nextState)
+                qVal = r + discount * vals[i+1]
                 vals[i] = qVal
                 instances.append((state, action, nextState, agent, qVal))
     return instances
@@ -101,12 +102,6 @@ def makeTrainingSet(instances):
     labels = [qVal for _, _, _, _, qVal in instances]
     return features, actions, labels
 
-def getReward(state, action, nextState, agent):
-    if type(nextState) is str:
-        if nextState == "Tie": return 0
-        if nextState == "Win": return 100
-        if nextState == "Lose": return -100
-    return agent.getScore(nextState)
 
 imp.load_source("player0", "baselineTeam.py")
 imp.load_source("player1", "baselineTeam.py")
