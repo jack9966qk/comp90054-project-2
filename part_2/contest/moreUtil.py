@@ -49,6 +49,13 @@ def getGhostDist(agent, gameState):
         dists = [0]
 
     return dists
+    
+def getGhostDistFeature(featruesTool,agent, successor,self.opp)
+    allpos = featruesTool.probMap[opp]
+    minv = 999999
+    
+    for pos in allpos:
+        minv = min(minv,)
 
 def getInvaderDistFeature(agent, nextState):
     return min(getInvaderDist(agent, nextState))

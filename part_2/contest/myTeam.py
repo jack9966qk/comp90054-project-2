@@ -20,10 +20,16 @@ import os
 from weightIO import *
 import moreUtil
 from additionalState import AdditionalState
+import featuresTool
 
 WEIGHTS_FILENAME = "trainedWeights.pickle"
 trainSet = []
 labelSet = []
+fdict = [
+'ClostFoodDistance',
+'FoodLeft'
+]
+features = featuresTool.featuresTool(fdict)
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):
@@ -53,11 +59,14 @@ def createTeam(firstIndex, secondIndex, isRed,
   """
 
   # The following line is an example only; feel free to change it.
+  
+  
   additionalState = AdditionalState(isRed, [firstIndex, secondIndex])
   firstAgent = eval(first)(firstIndex)
   secondAgent = eval(second)(secondIndex)
   firstAgent.setAdditionalState(additionalState)
   secondAgent.setAdditionalState(additionalState)
+  
   return [firstAgent, secondAgent]
 
 ##########
@@ -97,12 +106,18 @@ class DummyAgent(CaptureAgent):
         self.size = (self.walls.width,self.walls.height)
         self.middle = (self.size[0]/2) - (self.start[0]%2)
         
+        
         self.weights = WEIGHTS
         self.QValues = util.Counter()
         self.epsilon = 0.2
         self.gamma = 0.8
         self.alpha = 0.05
         self.discount = 0.9
+        
+        
+        features.initGame(self,gameState)
+        
+        util.pause
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -130,8 +145,13 @@ class DummyAgent(CaptureAgent):
         
         action = random.choice(bestActions)
         self.lastAction = action
-        features = self.getFeatures(gameState,action,sel = True)
-        trainSet.append(moreUtil.getTrainSet(features))
+        features1 = self.getFeatures(gameState,action,sel = True)
+        
+        tfeatures = features.getFeatures(self,gameState,action)
+        print features1
+        print tfeatures
+        #util.pause()
+        trainSet.append(moreUtil.getTrainSet(features1))
         labelSet.append(reward)
         return action
     
