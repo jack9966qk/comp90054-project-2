@@ -12,7 +12,7 @@ teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
 dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
 
-import fastDownwardAdapter
+from ffAdapter import plan
 
 def getFoodPositions(gameState, isRed):
   width, height = getLayoutSize(gameState)
@@ -320,7 +320,7 @@ class PddlOffenseAgent(CaptureAgent):
       [], # TODO determine whether ghost scared
       foodPositions)
     
-    solution = fastDownwardAdapter.plan("../../part_1/pacman.pddl", problem)
+    solution = plan(dir + "pacman.pddl", problem)
 
     x, y = gameState.getAgentPosition(self.index)
     act = parseSolution(solution, actions, x, y)
@@ -396,7 +396,7 @@ class PddlDefenseAgent(CaptureAgent):
       self.homeRange
     )
     
-    solution = fastDownwardAdapter.plan("../../part_1/ghost.pddl", problem)
+    solution = plan(dir + "ghost.pddl", problem)
 
     x, y = gameState.getAgentPosition(self.index)
     act = parseSolution(solution, actions, x, y)
