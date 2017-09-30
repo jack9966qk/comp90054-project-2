@@ -22,7 +22,7 @@ import featuresTool
 import reward
 import moreUtil
 import IOutil
-features = featuresTool.featuresTool()
+featuresTool = featuresTool.featuresTool()
 weightFile = "weight1.json"
 dirdict = {Directions.NORTH: (0, 1),
 Directions.SOUTH: (0, -1),
@@ -89,7 +89,7 @@ class DummyAgent(CaptureAgent):
     '''
     self.start = gameState.getAgentPosition(self.index)
     CaptureAgent.registerInitialState(self, gameState)
-    features.initGame(self,gameState)
+    featuresTool.initGame(self,gameState)
     '''
     Your initialization code goes here, if you need any.
     '''
@@ -264,7 +264,7 @@ class DummyAgent(CaptureAgent):
     #print gameState.getAgentDistances()
     action = random.choice(bestActions)
     
-   # tfeatures = features.getFeatures(self,gameState,action)
+    tfeatures = featuresTool.getFeatures(self,gameState,action)
    # trainSet.append(features.getTrainSet(tfeatures))
    # reward =1
    # labelSet.append(reward)

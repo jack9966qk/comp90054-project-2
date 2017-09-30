@@ -53,7 +53,7 @@ class featuresTool():
     
     def __init__(self,dict=None,usemodel = False):
         self.dict = dict
-        
+        self.lastState = None
         if not dict:
             self.dict = IOutil.loadFile(FileName)
             #self.dict = tdict
@@ -76,9 +76,9 @@ class featuresTool():
         self.mate = [i for i in self.team if not i ==agent.index]
         self.opp = agent.getOpponents(gameState)
         self.teamNum = gameState.getNumAgents()
-        self.lastidx = None
-        
-        
+        self.lastidx = 0
+        self.lastpos = None
+        self.lastState = [gameState for i in range(self.teamNum)]
             
        # print self.allpos
         return 
@@ -95,7 +95,7 @@ class featuresTool():
         predict = self.model.predict([X])
         return predict[0]
     
-    def updateProbMap(self,agent,gameState):
+    def updateProbMap(self,agent,lastState,gameState):
         opp=self.opp
         team = self.team
         selfpos = gameState.getAgentPosition(agent.index)
@@ -110,16 +110,11 @@ class featuresTool():
         lidx = self.lastidx
         idx = agent.index
         if not lidx == None:
-            while not (idx - 1+teamNum)%teamNum == lidx:
+            while not (idx - 1+teamNum)%teamNum in team:
                 idx = (idx - 1+teamNum)%teamNum
-                prevP = self.probMap[idx]
-                tempP = []
-                for pos in prevP:
-                    for dir in dirs:
-                        npos = (pos[0]+dir[0],pos[1]+dir[1])
-                        if (not self.walls[npos[0]][npos[1]]) and (npos not in tempP):
-                            tempP.append(npos)
-                self.probMap[idx]=tempP
+                
+                
+                self.probMap[idx]=self.expand(self.probMap[idx])
                         
             
         for i in opp:
@@ -133,18 +128,29 @@ class featuresTool():
                 if prob == 0:tempP.remove(pos)
             self.probMap[i] = tempP
                     
-                
+            
             poso = gameState.getAgentPosition(i)
             if not poso == None:
                 self.probMap[i]=[poso]
             
-            if len(tempP) == 0:
+            #if len(tempP) == 0:
+            if self.checkkill(agent,lastState,gameState,i):
                 self.probMap[i]=[gameState.getInitialAgentPosition(i)]
+                self.probMap[i]=self.expand(self.probMap[i])
             
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
-        self.lastidx = agent.index
+        #self.lastidx = agent.index
         return 0
+        
+    def expand(self,poss):
+        temp = []
+        for pos in poss:
+            for dir in dirs:
+                npos = (pos[0]+dir[0],pos[1]+dir[1])
+                if (not self.walls[npos[0]][npos[1]]) and (npos not in temp):
+                    temp.append(npos)
+        return temp
     
     def drawProbMap(self,agent,gameState):
         agent.debugClear()
@@ -155,15 +161,29 @@ class featuresTool():
     def getFeatures(self,agent,gameState,action,successor = None):
         features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
-        self.updateProbMap(agent,gameState)
+        
+        
+        if (not agent.index == self.lastidx): #and (not self.lastidx == None):
+            self.update(agent,self.lastState[agent.index],gameState)
+        self.lastidx = agent.index
+        self.lastState[agent.index] = gameState
+        #self.updateProbMap(agent,gameState)
         #print self.probMap[self.opp[0]]
         #self.drawProbMap(agent,gameState)
         #util.pause()
         
         for line in self.dict:
             features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
-            
+        
+        #print features
+        #util.pause()
         return features
+        
+    def update(self,agent,lastState,gameState):
+        self.updateProbMap(agent,lastState,gameState)
+        self.drawProbMap(agent,gameState)
+        
+        return 
         
     def getFeaturesSet(self,featrues):
         temp = []
@@ -180,6 +200,23 @@ class featuresTool():
         for line in self.dict:
             temp.append(fea[line])
         return temp
+        
+    def checkkill(self,agent,gameState,successor,opp):
+        #opp=self.opp
+        team = self.team
+        
+        
+        pos1 = gameState.getAgentPosition(opp)
+        pos2 = successor.getAgentPosition(agent.index)
+        
+        if pos1 == None:
+            return False
+        
+        if pos1 == pos2:
+            return True
+            
+                
+        return False
         
     def getClostestFoodDist(self,agent,gameState,action,successor):
         return moreUtil.getClosestFoodFeature(agent, gameState, successor)
@@ -213,6 +250,12 @@ class featuresTool():
         
     def getInvader2Dist(self,agent,gameState,action,successor):
         return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1])
+        
+    def getHasInvader1(self,agent,gameState,action,successor):
+        return int(not moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0]) == 999999)-0.5
+        
+    def getHasInvader2(self,agent,gameState,action,successor):
+        return int(not moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1]) == 999999)-0.5
         
     def getCarry(self,agent,gameState,action,successor):
         #return moreUtil.getCarryFeature(agent)

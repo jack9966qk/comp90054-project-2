@@ -118,10 +118,10 @@ class DummyAgent(CaptureAgent):
         self.weights = util.Counter()
         featuresTool.initGame(self,gameState)
         #print WEIGHTS
-        for i in range(len(featuresTool.dict)):
-            self.weights[featuresTool.dict[i]] = WEIGHTS[i]
+        #for i in range(len(featuresTool.dict)):
+        #    self.weights[featuresTool.dict[i]] = WEIGHTS[i]
         
-        util.pause
+        #util.pause
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -150,6 +150,7 @@ class DummyAgent(CaptureAgent):
         bestActions = [a for a, v in zip(actions, values) if v == maxValue]
         
         action = random.choice(bestActions)
+        #featuresTool.update(self,gameState,action)
         self.lastAction = action
         #features1 = self.getFeatures(gameState,action,sel = True)
         #tfeatures = featuresTool.getFeatures(self,gameState,action)

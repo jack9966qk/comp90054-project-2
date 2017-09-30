@@ -79,6 +79,7 @@ def loadReplayFiles(dir):
     return data
 
 def addLabels(data, discount=0.99):
+    print "adding labels..."
     instances = []
     for seqs, agents in data:
         for agent in agents:
@@ -95,12 +96,14 @@ def addLabels(data, discount=0.99):
     return instances
 
 def makeTrainingSet(instances):
+    print "making training Set..."
     features = [feat for _, _, feat, _, _, _ in instances]
     actions = [act for _, act, _, _, _, _ in instances]
     labels = [qVal for _, _, _, _, _, qVal in instances]
     return features, actions, labels
 
 def addFeatures(replayData):
+    print "adding featrues..."
     return [addFeaturesOneGame(seqs, ag) for seqs, ag in replayData]
 
 def addFeaturesOneGame(sequences, agents):
@@ -117,9 +120,11 @@ if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
     imp.load_source("player1", "Team1.py")
     
-    #dir = simulateGames("Team1", "baselineTeam", numGamesPerRun=10, numRuns=10)
+    #dir = simulateGames("Team1", "baselineTeam", numGamesPerRun=1, numRuns=10)
     # all games finished, load data from replay files
-    dir = "replay/Sep-30-19-08-34"
+    #dir = "replay/Sep-30-19-08-34" #100
+    dir = "replay/Sep-30-19-44-03" #10
+    #dir = "replay/Sep-30-19-39-48" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)

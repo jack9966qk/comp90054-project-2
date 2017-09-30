@@ -78,7 +78,7 @@ def trainLinear(features, labels):
     print weights
     '''
     
-    model = MLPRegressor([25,10])
+    model = MLPRegressor([25,10,10])
     model.fit(features,labels)
     
     IOutil.savePickle(modelName,model)

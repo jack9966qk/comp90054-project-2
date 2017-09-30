@@ -10,5 +10,7 @@
     "Ghost1Dist",
     "Ghost2Dist",
     "Invader1Dist",
-    "Invader2Dist"
+    "Invader2Dist",
+    "HasInvader1",
+    "HasInvader2"
 ]
