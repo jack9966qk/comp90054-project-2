@@ -11,7 +11,7 @@ import imp
 from multiprocessing import Pool
 from functools import partial
 import IOutil
-
+#from Team1 import Team1
 
 WEIGHT_FILENAME = "rlWeights.json"
 
@@ -78,7 +78,7 @@ def loadReplayFiles(dir):
                 data.append( recoverFromReplay(replay) )
     return data
 
-def addLabels(data, discount=0.9):
+def addLabels(data, discount=0.99):
     instances = []
     for seqs, agents in data:
         for agent in agents:
@@ -115,18 +115,19 @@ def addFeaturesOneGame(sequences, agents):
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "baselineTeam.py")
+    imp.load_source("player1", "Team1.py")
     
-    dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
+    #dir = simulateGames("Team1", "baselineTeam", numGamesPerRun=10, numRuns=10)
     # all games finished, load data from replay files
+    dir = "replay/Sep-30-19-08-34"
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
     features, actions, labels = makeTrainingSet(instances)
     
-    #IOutil.saveFile("tfeatures.json",features)
-    #IOutil.saveFile("tactions.json",actions)
-    #IOutil.saveFile("tlabels.json",labels)
+    IOutil.saveFile("tfeatures.json",features)
+    IOutil.saveFile("tactions.json",actions)
+    IOutil.saveFile("tlabels.json",labels)
     
     #features = IOutil.loadFile("tfeatures.json")
     #actions = IOutil.loadFile("tactions.json")
@@ -134,6 +135,6 @@ if __name__ == "__main__":
     weight = train(features, actions, labels)
 
 # # save weight
-    IOutil.saveFile(WEIGHT_FILENAME,weight)
+    #IOutil.saveFile(WEIGHT_FILENAME,weight)
  #   with open(WEIGHT_FILENAME, 'w') as f:
  #       pickle.dump(weight, f)

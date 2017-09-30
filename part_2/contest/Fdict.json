@@ -1,0 +1,14 @@
+[
+    "ClostestFoodDist", 
+    "TeamFoodLeft", 
+    "OpponentFoodLeft", 
+    "HomeDist", 
+    "TeamDist", 
+    "IsPacman", 
+    "TeamIsPacman", 
+    "Carry",
+    "Ghost1Dist",
+    "Ghost2Dist",
+    "Invader1Dist",
+    "Invader2Dist"
+]

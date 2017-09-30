@@ -4,7 +4,7 @@ def getIntermediaReward(agent, state, action, nextState):
     x, y = state.getAgentPosition(agent.index)
     
     if (abs(nx - x) + abs(ny - y)) > 1: # check death
-        return -10
+        return -100
     
     if (nx, ny) == (x, y): # no move
         return -5
@@ -14,17 +14,17 @@ def getIntermediaReward(agent, state, action, nextState):
     positions = [a.getPosition() for a in invaders]
     if len(positions) > 0 and not state.getAgentState(agent.index).isPacman:
         for position in positions:
-            if (nx, ny) == position: return 5 # chase invaders
+            if (nx, ny) == position: return 50 # chase invaders
     
     features = agent.getFeatures(state, action)
     if state.getAgentState(agent.index).isPacman and not nextState.getAgentState(agent.index).isPacman and features['carry'] > 0:
-        return features['carry'] * 20
+        return features['carry']**3 * 20000
     
     isRed = state.isOnRedTeam(agent.index)
     food = state.getBlueFood() if isRed else state.getRedFood()
     capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
     if food[nx][ny]:
-        return 1 # eat food
+        return 1000 # eat food
     if (nx, ny) in capsule:
         return 3 # eat capsule
     return -1

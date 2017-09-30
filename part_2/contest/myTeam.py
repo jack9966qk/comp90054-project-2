@@ -30,7 +30,7 @@ fdict = [
 'ClostFoodDistance',
 'FoodLeft'
 ]
-featuresTool = featuresTool.featuresTool()
+featuresTool = featuresTool.featuresTool(usemodel = True)
 
 # read from file if exist
 if os.path.exists(WEIGHTS_FILENAME):
@@ -130,10 +130,10 @@ class DummyAgent(CaptureAgent):
     def evaluate(self,gameState,action):
         #features = self.getFeatures(gameState, action)
         features = featuresTool.getFeatures(self,gameState,action)
-        weights = self.weights
+        #weights = self.weights
         #print features
-        return features * weights
-        
+        #return features * weights
+        return featuresTool.evaluate(features)
         
     def chooseAction(self, gameState):
         # Pick Action
@@ -152,8 +152,8 @@ class DummyAgent(CaptureAgent):
         action = random.choice(bestActions)
         self.lastAction = action
         #features1 = self.getFeatures(gameState,action,sel = True)
+        #tfeatures = featuresTool.getFeatures(self,gameState,action)
         
-        #tfeatures = features.getFeatures(self,gameState,action)
         #print features1
         #print tfeatures
         #util.pause()

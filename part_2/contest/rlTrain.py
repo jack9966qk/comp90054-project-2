@@ -2,8 +2,13 @@ import sys
 import util
 import featuresTool
 import numpy as np
+import IOutil
 from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
 alpha = 0.1 # learning rate
+
+HPFileName = "Hyper.json"
+modelName = "modle.pickle"
 
 # def extractFeatures(state, action, nextState, agent,featureTool):
 #     # return features of state
@@ -61,7 +66,7 @@ def trainLinear(features, labels):
         print weights
         util.pause()
     '''
-    
+    '''
     afeatures = np.array(features)
     alabels = np.array(labels)
     
@@ -71,7 +76,15 @@ def trainLinear(features, labels):
     
     weights = linreg.coef_
     print weights
-    return np.ndarray.tolist(weights)
+    '''
+    
+    model = MLPRegressor([25,10])
+    model.fit(features,labels)
+    
+    IOutil.savePickle(modelName,model)
+    
+    return 0
+    #return np.ndarray.tolist(weights)
     
 def times(a,b):
     temp = 0

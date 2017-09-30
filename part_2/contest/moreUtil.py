@@ -38,6 +38,9 @@ def getHomeDist(tool,agent,gameState):
             bestv = min(bestv,tempv)
     
     return bestv
+    
+def isInvader(featruesTool,pos):
+    return abs(pos[0]-featruesTool.start) < (featruesTool.size[0]/2-1)
 
 def getGhostDist(agent, gameState):
     myState = gameState.getAgentState(agent.index)
@@ -52,15 +55,28 @@ def getGhostDist(agent, gameState):
     
 def getGhostDistFeature(featruesTool,agent, successor,opp):
     allpos = featruesTool.probMap[opp]
+    myState = successor.getAgentState(agent.index)
     myPos = myState.getPosition()
     minv = 999999
     
     for pos in allpos:
-        minv = min(minv,agent.getMazeDistance(myPos, pos))
+        if not isInvader(featruesTool,pos):
+            minv = min(minv,agent.getMazeDistance(myPos, pos))
     return minv
 
-def getInvaderDistFeature(agent, nextState):
-    return min(getInvaderDist(agent, nextState))
+def getInvaderDistFeature(featruesTool,agent, successor,opp):
+    allpos = featruesTool.probMap[opp]
+    myState = successor.getAgentState(agent.index)
+    myPos = myState.getPosition()
+    minv = 999999
+    
+    for pos in allpos:
+        if isInvader(featruesTool,pos):
+            minv = min(minv,agent.getMazeDistance(myPos, pos))
+    return minv
+    
+#def getInvaderDistFeature(agent, nextState):
+#    return min(getInvaderDist(agent, nextState))
 
 def getInvaderNumFeature(agent, nextState):
     return len(getInvaderDist(agent, nextState))
@@ -68,8 +84,8 @@ def getInvaderNumFeature(agent, nextState):
 def getHomeDistFeature(tool,agent, nextState):
     return getHomeDist(tool,agent, nextState)
 
-def getGhostDistFeature(agent, nextState):
-    return min(getGhostDist(agent, nextState))
+#def getGhostDistFeature(agent, nextState):
+#    return min(getGhostDist(agent, nextState))
 
 def getFoodLeftFeature(agent, nextState):
     return len(agent.getFood(nextState).asList())

@@ -2,6 +2,9 @@
 import moreUtil
 import util
 import IOutil
+import pickle
+from sklearn.neural_network import MLPRegressor
+
 allDict = [
 'WallGrid',
 'TeamFoodGrid',
@@ -38,22 +41,26 @@ tdict = [
     'HomeDist',
     'TeamDist',
     'IsPacman',
-    'TeamIsPacman'
-#    'Carry'
+    'TeamIsPacman',
+    'Carry'
 ]
 
-FileName = "Fdist.json"
+FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
-
+modelName = "modle.pickle"
 
 class featuresTool():
     
-    def __init__(self,dict=None):
+    def __init__(self,dict=None,usemodel = False):
         self.dict = dict
         
         if not dict:
-            #self.dict = IOutil.loadFile(FileName)
-            self.dict = tdict
+            self.dict = IOutil.loadFile(FileName)
+            #self.dict = tdict
+        if usemodel:
+            with open(modelName) as f:
+                self.model = pickle.load(f) 
+            #self.model = IOutil.loadPickle(modelName)
             
     def initGame(self,agent,gameState):
         #if not agent.index == agent.getTeam(gameState)[0]: return
@@ -71,6 +78,7 @@ class featuresTool():
         self.teamNum = gameState.getNumAgents()
         self.lastidx = None
         
+        
             
        # print self.allpos
         return 
@@ -82,6 +90,10 @@ class featuresTool():
             temp[pos]=0
         return temp
         '''
+    def evaluate(self,features):
+        X = self.getFeaturesSet(features)
+        predict = self.model.predict([X])
+        return predict[0]
     
     def updateProbMap(self,agent,gameState):
         opp=self.opp
@@ -89,6 +101,11 @@ class featuresTool():
         selfpos = gameState.getAgentPosition(agent.index)
         noisyDist = gameState.getAgentDistances()
         teamNum = self.teamNum
+        
+        if not noisyDist: return 0
+        #print noisyDist
+        
+        if self.lastidx == agent.index: return 0
         
         lidx = self.lastidx
         idx = agent.index
@@ -138,16 +155,17 @@ class featuresTool():
     def getFeatures(self,agent,gameState,action,successor = None):
         features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
-        #self.updateProbMap(agent,gameState)
+        self.updateProbMap(agent,gameState)
         #print self.probMap[self.opp[0]]
         #self.drawProbMap(agent,gameState)
+        #util.pause()
         
         for line in self.dict:
             features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
             
         return features
         
-    def getTrainSet(self,featrues):
+    def getFeaturesSet(self,featrues):
         temp = []
         for line in self.dict:
             temp.append(featrues[line])
@@ -176,10 +194,10 @@ class featuresTool():
         return agent.getMazeDistance(gameState.getAgentPosition(self.team[0]), gameState.getAgentPosition(self.team[1]))
         
     def getIsPacman(self,agent,gameState,action,successor):
-        return int(gameState.getAgentState(agent.index).isPacman)
+        return int(gameState.getAgentState(agent.index).isPacman)-0.5
     
     def getTeamIsPacman(self,agent,gameState,action,successor):
-        return int(gameState.getAgentState(self.mate[0]).isPacman)
+        return int(gameState.getAgentState(self.mate[0]).isPacman)-0.5
         
     def getHomeDist(self,agent,gameState,action,successor):
         return moreUtil.getHomeDistFeature(self,agent, successor)
@@ -189,7 +207,14 @@ class featuresTool():
         
     def getGhost2Dist(self,agent,gameState,action,successor):
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
+    
+    def getInvader1Dist(self,agent,gameState,action,successor):
+        return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0])
+        
+    def getInvader2Dist(self,agent,gameState,action,successor):
+        return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1])
         
     def getCarry(self,agent,gameState,action,successor):
-        return moreUtil.getCarryFeature(agent)
+        #return moreUtil.getCarryFeature(agent)
+        return gameState.getAgentState(agent.index).numCarrying
         
