@@ -46,9 +46,13 @@ def train(features, actions, labels, model = "Linear"):
     # return trained weights
     if model == "Linear":
         return trainLinear(features, labels)
-    else:
-        print "Undefined model"
-        sys.exit(1)
+    
+    if model == "MLP":
+        return trainMLP(features, labels)
+        
+        
+    print "Undefined model"
+    sys.exit(1)
 
 def trainLinear(features, labels):
     '''
@@ -77,14 +81,26 @@ def trainLinear(features, labels):
     weights = linreg.coef_
     print weights
     '''
+    afeatures = np.array(features)
+    alabels = np.array(labels)
     
-    model = MLPRegressor([25,10,10])
+    model = LinearRegression()
+    model.fit(afeatures,alabels)
+    
+    IOutil.savePickle(modelName,model)
+    weights = model.coef_
+    
+    #return 0
+    return np.ndarray.tolist(weights)
+    
+def trainMLP(features, labels):
+    model = MLPRegressor([8,5,5,5,5,5,5,5,3],max_iter=500)
     model.fit(features,labels)
     
     IOutil.savePickle(modelName,model)
-    
+
+
     return 0
-    #return np.ndarray.tolist(weights)
     
 def times(a,b):
     temp = 0

@@ -78,7 +78,7 @@ def loadReplayFiles(dir):
                 data.append( recoverFromReplay(replay) )
     return data
 
-def addLabels(data, discount=0.99):
+def addLabels(data, discount=0.95):
     print "adding labels..."
     instances = []
     for seqs, agents in data:
@@ -118,9 +118,9 @@ def addFeaturesOneGame(sequences, agents):
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "Team1.py")
+    imp.load_source("player1", "myTeam.py")
     
-    #dir = simulateGames("Team1", "baselineTeam", numGamesPerRun=1, numRuns=10)
+    #dir = simulateGames("myTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     #dir = "replay/Sep-30-19-08-34" #100
     dir = "replay/Sep-30-19-44-03" #10
@@ -137,9 +137,10 @@ if __name__ == "__main__":
     #features = IOutil.loadFile("tfeatures.json")
     #actions = IOutil.loadFile("tactions.json")
     #labels = IOutil.loadFile("tlabels.json")
-    weight = train(features, actions, labels)
+    #weight = train(features, actions, labels)
+    weight = train(features, actions, labels,model ="MLP")
 
 # # save weight
-    #IOutil.saveFile(WEIGHT_FILENAME,weight)
- #   with open(WEIGHT_FILENAME, 'w') as f:
- #       pickle.dump(weight, f)
+    IOutil.saveFile(WEIGHT_FILENAME,weight)
+   # with open(WEIGHT_FILENAME, 'w') as f:
+   #     pickle.dump(weight, f)

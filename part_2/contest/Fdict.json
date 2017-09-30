@@ -12,5 +12,9 @@
     "Invader1Dist",
     "Invader2Dist",
     "HasInvader1",
-    "HasInvader2"
+    "HasInvader2",
+    "HasKill1",
+    "HasKill2",
+    "CarryXHome",
+    "IsStop"
 ]

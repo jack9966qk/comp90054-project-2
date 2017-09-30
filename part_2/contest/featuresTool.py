@@ -3,6 +3,7 @@ import moreUtil
 import util
 import IOutil
 import pickle
+import reward
 from sklearn.neural_network import MLPRegressor
 
 allDict = [
@@ -181,7 +182,7 @@ class featuresTool():
         
     def update(self,agent,lastState,gameState):
         self.updateProbMap(agent,lastState,gameState)
-        self.drawProbMap(agent,gameState)
+        #self.drawProbMap(agent,gameState)
         
         return 
         
@@ -217,6 +218,9 @@ class featuresTool():
             
                 
         return False
+        
+    def getReward():
+        return 
         
     def getClostestFoodDist(self,agent,gameState,action,successor):
         return moreUtil.getClosestFoodFeature(agent, gameState, successor)
@@ -256,6 +260,18 @@ class featuresTool():
         
     def getHasInvader2(self,agent,gameState,action,successor):
         return int(not moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1]) == 999999)-0.5
+        
+    def getHasKill1(self,agent,gameState,action,successor):
+        return int(self.checkkill(agent,gameState,successor,self.opp[0]))-0.5
+        
+    def getHasKill2(self,agent,gameState,action,successor):
+        return int(self.checkkill(agent,gameState,successor,self.opp[1]))-0.5
+        
+    def getCarryXHome(self,agent,gameState,action,successor):
+        return moreUtil.getHomeDistFeature(self,agent, successor) * gameState.getAgentState(agent.index).numCarrying
+        
+    def getIsStop(self,agent,gameState,action,successor):
+        return int(action == "Stop")-0.5
         
     def getCarry(self,agent,gameState,action,successor):
         #return moreUtil.getCarryFeature(agent)

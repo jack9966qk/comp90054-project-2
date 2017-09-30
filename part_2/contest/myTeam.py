@@ -33,10 +33,10 @@ fdict = [
 featuresTool = featuresTool.featuresTool(usemodel = True)
 
 # read from file if exist
-if os.path.exists(WEIGHTS_FILENAME):
-    WEIGHTS = loadWeightsJson(WEIGHTS_FILENAME)
-else:
-    WEIGHTS = util.Counter()
+#if os.path.exists(WEIGHTS_FILENAME):
+#    WEIGHTS = loadWeightsJson(WEIGHTS_FILENAME)
+#else:
+#    WEIGHTS = util.Counter()
 
 #################
 # Team creation #
@@ -110,7 +110,8 @@ class DummyAgent(CaptureAgent):
         
         #self.weights = WEIGHTS
         self.QValues = util.Counter()
-        self.epsilon = 0.2
+        #self.epsilon = 0.2
+        self.epsilon = 0
         self.gamma = 0.8
         self.alpha = 0.05
         self.discount = 0.9
@@ -145,16 +146,22 @@ class DummyAgent(CaptureAgent):
         #    reward = 0
         
         actions = gameState.getLegalActions(self.index)
+        actions.remove("Stop")
         values = [self.evaluate(gameState, a) for a in actions]
         maxValue = max(values)
         bestActions = [a for a, v in zip(actions, values) if v == maxValue]
         
-        action = random.choice(bestActions)
+        
+        if util.flipCoin(self.epsilon):
+            action = random.choice(actions)
+        else:
+            action = random.choice(bestActions)
         #featuresTool.update(self,gameState,action)
         self.lastAction = action
         #features1 = self.getFeatures(gameState,action,sel = True)
         #tfeatures = featuresTool.getFeatures(self,gameState,action)
-        
+        print zip(actions, values)
+        print action
         #print features1
         #print tfeatures
         #util.pause()
@@ -170,7 +177,7 @@ class DummyAgent(CaptureAgent):
         CaptureAgent.final(self, gameState)
         # save updated weights to file
         moreUtil.saveSet(trainSet,labelSet)
-        saveWeightsJson(WEIGHTS, WEIGHTS_FILENAME)
+     #   saveWeightsJson(WEIGHTS, WEIGHTS_FILENAME)
 
     def getReward(self, state, action, nextState):
         nx, ny = nextState.getAgentPosition(self.index)
