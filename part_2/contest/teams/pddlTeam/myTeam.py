@@ -1,12 +1,18 @@
+import os, sys
 from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
 from itertools import product
 from capture import SIGHT_RANGE
 import game
-import fastDownwardAdapter
 from moreUtil import getLayoutSize, getHomeArea
 from additionalState import AdditionalState
+
+teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+dir = "teams/{}/".format(teamName)
+sys.path.append(dir)
+
+import fastDownwardAdapter
 
 def getFoodPositions(gameState, isRed):
   width, height = getLayoutSize(gameState)

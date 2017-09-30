@@ -672,23 +672,23 @@ posy-15
 (is-home posx-15 posy-14)
 (is-home posx-15 posy-15)
 
-(pacman-at posx-1 posy-6)
+(pacman-at posx-1 posy-12)
 
-(food-at posx-21 posy-1)
-(food-at posx-23 posy-1)
-(food-at posx-26 posy-10)
-(food-at posx-26 posy-9)
-(food-at posx-26 posy-11)
+(food-at posx-17 posy-6)
+(food-at posx-21 posy-12)
+(food-at posx-21 posy-6)
+(food-at posx-21 posy-8)
+(food-at posx-22 posy-10)
 
 )
 
 (:goal
 (and
-(not (food-at posx-21 posy-1))
-(not (food-at posx-23 posy-1))
-(not (food-at posx-26 posy-10))
-(not (food-at posx-26 posy-9))
-(not (food-at posx-26 posy-11))
+(not (food-at posx-17 posy-6))
+(not (food-at posx-21 posy-12))
+(not (food-at posx-21 posy-6))
+(not (food-at posx-21 posy-8))
+(not (food-at posx-22 posy-10))
 
 (at-home)
 )

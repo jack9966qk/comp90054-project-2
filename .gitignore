@@ -3,3 +3,5 @@ fast-downward/
 part_2/contest/sas_plan
 
 part_2/contest/output.sas
+part_2/contest/replay
+*.cpickle
