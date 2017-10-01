@@ -1,4 +1,3 @@
-from collections import defaultdict
 from capture import SCARED_TIME
 from moreUtil import getHomeArea
 
@@ -9,7 +8,7 @@ class AdditionalState(object):
         self.carry = {}
         for idx in self.teamIndices:
             self.carry[idx] = 0
-        self.lastScaredTime = defaultdict(lambda: None)
+        self.lastScaredTime = {}
     
     def update(self, gameState, agentIndex, action):
         newState = gameState.generateSuccessor(agentIndex, action)
@@ -33,6 +32,6 @@ class AdditionalState(object):
             self.carry[agentIndex] = 0
     
     def isScared(self, gameState, opponentIdx):
-        if not self.lastScaredTime[opponentIdx]: return False
+        if not self.lastScaredTime.get(opponentIdx): return False
         timeleft = gameState.data.timeleft
         return self.lastScaredTime[opponentIdx] - timeleft <= SCARED_TIME
