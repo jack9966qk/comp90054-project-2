@@ -5,13 +5,13 @@ from game import Directions
 from itertools import product
 from capture import SIGHT_RANGE
 import game
-from moreUtil import getLayoutSize, getHomeArea
-from additionalState import AdditionalState
 
 teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
 dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
 
+from moreUtil import getLayoutSize, getHomeArea
+from additionalState import AdditionalState
 from ffAdapter import plan
 
 def getFoodPositions(gameState, isRed):
