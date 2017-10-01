@@ -989,7 +989,7 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
       #f = file(fname, 'w')
       
       from captureAgents import CaptureAgent
-      # agentsToDump = [CaptureAgent(a.index) for a in agents]
+      agentsToDump = [CaptureAgent(a.index) for a in agents]
       components = {'layout': layout, 'agents': agents, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
       #f.close()
       print "recorded"
