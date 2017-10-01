@@ -160,8 +160,8 @@ class DummyAgent(CaptureAgent):
         self.lastAction = action
         #features1 = self.getFeatures(gameState,action,sel = True)
         #tfeatures = featuresTool.getFeatures(self,gameState,action)
-        print zip(actions, values)
-        print action
+        #print zip(actions, values)
+        #print action
         #print features1
         #print tfeatures
         #util.pause()

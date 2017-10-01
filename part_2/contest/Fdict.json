@@ -1,5 +1,6 @@
 [
     "ClostestFoodDist", 
+    "SumOfFoodDists",
     "TeamFoodLeft", 
     "OpponentFoodLeft", 
     "HomeDist", 
@@ -9,6 +10,8 @@
     "Carry",
     "Ghost1Dist",
     "Ghost2Dist",
+    "Ghost1Close",
+    "Ghost2Close",
     "Invader1Dist",
     "Invader2Dist",
     "HasInvader1",

@@ -159,3 +159,15 @@ def getClosestFoodFeature(agent, gameState, nextState):
     if dist == None : return 0
     return dist
         
+def getFoodDists(agent, gameState):
+    selfpos = gameState.getAgentPosition(agent.index)
+    #print agent.getFood(gameState).asList()
+    dists = [agent.getMazeDistance(selfpos,pos) for pos in agent.getFood(gameState).asList()]
+    if len(dists)==0:
+        dists = [999999]
+    return dists
+
+
+
+
+

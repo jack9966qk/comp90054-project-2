@@ -35,20 +35,12 @@ allDict = [
 ]
 
 
-tdict = [
-    'ClostestFoodDist',
-    'TeamFoodLeft',
-    'OpponentFoodLeft',
-    'HomeDist',
-    'TeamDist',
-    'IsPacman',
-    'TeamIsPacman',
-    'Carry'
-]
 
+ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 modelName = "modle.pickle"
+SIGHT_RANGE = 5
 
 class featuresTool():
     
@@ -71,7 +63,7 @@ class featuresTool():
         self.allpos = [(i,j) for i in range(self.size[0]) for j in range(self.size[1]) if not self.walls[i][j]]
         #self.probMap = [self.iniProbMap() for i in range(gameState.getNumAgents())]
         self.probMap = [[gameState.getInitialAgentPosition(i)] for i in range(gameState.getNumAgents())]
-        self.start = agent.start[0]
+        self.start = gameState.getAgentPosition(agent.index)[0]
         self.middle = (self.size[0]/2) - (self.start%2)
         self.team = agent.getTeam(gameState)
         self.mate = [i for i in self.team if not i ==agent.index]
@@ -80,6 +72,7 @@ class featuresTool():
         self.lastidx = 0
         self.lastpos = None
         self.lastState = [gameState for i in range(self.teamNum)]
+        self.lastpos = [gameState.getAgentPosition(agent.index) for i in range(self.teamNum)]
             
        # print self.allpos
         return 
@@ -126,7 +119,9 @@ class featuresTool():
                 prob2 = gameState.getDistanceProb(trueD+1,noisyDist[i])
                 prob3 = gameState.getDistanceProb(trueD-1,noisyDist[i])
                 prob = max([prob1,prob2,prob3])
-                if prob == 0:tempP.remove(pos)
+                obs = util.manhattanDistance(pos,selfpos) <= SIGHT_RANGE
+                if prob == 0 or obs:tempP.remove(pos)
+                
             self.probMap[i] = tempP
                     
             
@@ -164,13 +159,12 @@ class featuresTool():
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
         
         
-        if (not agent.index == self.lastidx): #and (not self.lastidx == None):
+        if (not agent.index == self.lastidx):
             self.update(agent,self.lastState[agent.index],gameState)
         self.lastidx = agent.index
         self.lastState[agent.index] = gameState
-        #self.updateProbMap(agent,gameState)
-        #print self.probMap[self.opp[0]]
-        #self.drawProbMap(agent,gameState)
+        self.lastpos[agent.index] = gameState.getAgentPosition(agent.index)
+        
         #util.pause()
         
         for line in self.dict:
@@ -223,16 +217,19 @@ class featuresTool():
         return 
         
     def getClostestFoodDist(self,agent,gameState,action,successor):
-        return moreUtil.getClosestFoodFeature(agent, gameState, successor)
+        return min(moreUtil.getFoodDists(agent, successor))
         
     def getTeamFoodLeft(self,agent,gameState,action,successor):
-        return moreUtil.getFoodLeftFeature(agent, successor)
+        return len(moreUtil.getFoodDists(agent, successor))
     
+    def getSumOfFoodDists(self,agent,gameState,action,successor):
+        return sum(moreUtil.getFoodDists(agent, successor))
+        
     def getOpponentFoodLeft(self,agent,gameState,action,successor):
         return len(agent.getFoodYouAreDefending(successor).asList())
         
     def getTeamDist(self,agent,gameState,action,successor):
-        return agent.getMazeDistance(gameState.getAgentPosition(self.team[0]), gameState.getAgentPosition(self.team[1]))
+        return agent.getMazeDistance(self.lastpos[self.team[0]], self.lastpos[self.team[0]])
         
     def getIsPacman(self,agent,gameState,action,successor):
         return int(gameState.getAgentState(agent.index).isPacman)-0.5
@@ -248,7 +245,13 @@ class featuresTool():
         
     def getGhost2Dist(self,agent,gameState,action,successor):
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
-    
+        
+    def getGhost1Close(self,agent,gameState,action,successor):
+        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0]) , ESCAPE_DIST)
+        
+    def getGhost2Close(self,agent,gameState,action,successor):
+        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1]) , ESCAPE_DIST)
+        
     def getInvader1Dist(self,agent,gameState,action,successor):
         return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0])
         
