@@ -988,9 +988,8 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
       #fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
       #f = file(fname, 'w')
       
-      # agentsToDump = [game.Agent() for a in agents]
-      # for i in range(len(agentsToDump)):
-        # agentsToDump[i].index = agents[i].index
+      from captureAgents import CaptureAgent
+      # agentsToDump = [CaptureAgent(a.index) for a in agents]
       components = {'layout': layout, 'agents': agents, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
       #f.close()
       print "recorded"

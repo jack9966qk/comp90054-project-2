@@ -3,3 +3,7 @@ fast-downward/
 *.pickle
 *.cpickle
 score
+ff
+execution.details
+sas_plan
+tmp/
