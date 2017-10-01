@@ -25,7 +25,7 @@ WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
 MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool(usemodel = True)
-
+PRINTF = False
 
 
 #################
@@ -97,6 +97,7 @@ class DummyAgent(CaptureAgent):
         self.weightsDict = self.loadWeightDict()
         featuresTool.initGame(self,gameState)
         
+        IOutil.saveFile(WEIGHTS_FILENAME,self.weightsDict)
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -119,7 +120,8 @@ class DummyAgent(CaptureAgent):
         
         features = featuresTool.getFeatures(self,gameState,action)
         sfeatures = featuresTool.getFeatures(self,gameState,"Stop")
-        mod = self.getMod(sfeatures)
+        #mod = self.getMod(self,sfeatures,gameState)
+        mod = featuresTool.getMod(self,sfeatures,gameState)
         weights = self.weightsDict[mod]
         return features * weights
         
@@ -138,29 +140,47 @@ class DummyAgent(CaptureAgent):
         features = featuresTool.getFeatures(self,gameState,action)
         self.lastAction = action
         sfeatures = featuresTool.getFeatures(self,gameState,"Stop")
-        mod = self.getMod(sfeatures)
+        #mod = self.getMod(sfeatures,gameState)
+        mod = featuresTool.getMod(self,sfeatures,gameState)
         
-        print zip(actions, values)
-        print mod
-        print features
-        print action
+        if PRINTF:
+            print zip(actions, values)
+            print (self.index,mod,action,bestActions)
+            print features
+            print
+        
         
         #util.pause()
         return action
     
-    def getMod(self,features):
+    def getMod(self,features,gameState):
         #closestGhost = min(features['Ghost1Close'],Ghost1Close['Ghost2Close'])
+        
         if features['HomeDist'] >0 and features['Carry']>0 and features['HomeDist']<features['ClostestFoodDist']:
             return 'backhome'
         
+        if features['TeamFoodLeft']<=2:
+            return 'backhome'
         
+        if (features['HasGhost']>0):
+            return "backhome"
+            
+        if features["HasInvader1"]>0 and self.index == self.getTeam(gameState)[0]:
+            if features["IsPacman"]>0:
+                return "backhome"
+            return "defense1"
+            
+        if features["HasInvader2"]>0 and self.index == self.getTeam(gameState)[1]:
+            if features["IsPacman"]>0:
+                return "backhome"
+            return "defense2"
+            
         return "offense"
         
 
     def final(self, gameState):
         CaptureAgent.final(self, gameState)
         # save updated weights to file
-        IOutil.saveFile(WEIGHTS_FILENAME,self.weightsDict)
 
 
 

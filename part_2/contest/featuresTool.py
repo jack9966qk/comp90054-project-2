@@ -35,12 +35,13 @@ allDict = [
 ]
 
 
-
+DRAW = False
 ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 modelName = "modle.pickle"
-SIGHT_RANGE = 5
+SIGHT_RANGE = 6
+MODS_FILENAME = 'ModDict.json'
 
 class featuresTool():
     
@@ -50,6 +51,12 @@ class featuresTool():
         if not dict:
             self.dict = IOutil.loadFile(FileName)
             #self.dict = tdict
+        self.Mdict = IOutil.loadFile(MODS_FILENAME)
+        rMdict = {}
+        for i in range(len(self.Mdict)):
+            rMdict[self.Mdict[i]]=i
+        self.rMdict = rMdict
+        #print self.rMdict
         if usemodel:
             with open(modelName) as f:
                 self.model = pickle.load(f) 
@@ -105,10 +112,13 @@ class featuresTool():
         idx = agent.index
         if not lidx == None:
             while not (idx - 1+teamNum)%teamNum in team:
+                
                 idx = (idx - 1+teamNum)%teamNum
-                
-                
-                self.probMap[idx]=self.expand(self.probMap[idx])
+                poso = gameState.getAgentPosition(idx)
+                if not poso == None:
+                    self.probMap[idx]=[poso]
+                else:
+                    self.probMap[idx]=self.expand(self.probMap[idx])
                         
             
         for i in opp:
@@ -119,15 +129,18 @@ class featuresTool():
                 prob2 = gameState.getDistanceProb(trueD+1,noisyDist[i])
                 prob3 = gameState.getDistanceProb(trueD-1,noisyDist[i])
                 prob = max([prob1,prob2,prob3])
-                obs = util.manhattanDistance(pos,selfpos) <= SIGHT_RANGE
-                if prob == 0 or obs:tempP.remove(pos)
-                
-            self.probMap[i] = tempP
-                    
+                if prob == 0:
+                    while pos in tempP:
+                        tempP.remove(pos)
             
-            poso = gameState.getAgentPosition(i)
-            if not poso == None:
-                self.probMap[i]=[poso]
+            
+            for pos in tempP:
+                obs = util.manhattanDistance(pos,selfpos) < SIGHT_RANGE
+                poso = gameState.getAgentPosition(i)
+                if obs and poso == None:
+                    while pos in tempP:
+                        tempP.remove(pos)
+            self.probMap[i] = tempP
             
             #if len(tempP) == 0:
             if self.checkkill(agent,lastState,gameState,i):
@@ -152,10 +165,13 @@ class featuresTool():
         agent.debugClear()
             #self.debugDraw([pos],[probMap[0][pos],0,0])
         agent.debugDraw(self.probMap[self.opp[0]],[1,0,0])
+        agent.debugDraw(self.probMap[self.opp[1]],[0,1,0])
+        tp = [pos for pos in self.probMap[self.opp[0]] if (pos in self.probMap[self.opp[1]])]
+        agent.debugDraw(tp,[1,1,0])
         return 0
     
     def getFeatures(self,agent,gameState,action,successor = None):
-        features = util.Counter()
+        self.features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
         
         
@@ -168,15 +184,16 @@ class featuresTool():
         #util.pause()
         
         for line in self.dict:
-            features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
+            self.features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
         
         #print features
         #util.pause()
-        return features
+        return self.features
         
     def update(self,agent,lastState,gameState):
         self.updateProbMap(agent,lastState,gameState)
-        #self.drawProbMap(agent,gameState)
+        if DRAW:
+            self.drawProbMap(agent,gameState)
         
         return 
         
@@ -195,6 +212,31 @@ class featuresTool():
         for line in self.dict:
             temp.append(fea[line])
         return temp
+        
+    def getMod(self,agent,features,gameState):
+        mod = moreUtil.getModSelf(self,agent,features,gameState)
+        return mod
+        
+    def getModSet(self,agent,gameState,action,successor):
+        fea = util.Counter()
+        if not type(gameState) == str:
+            fea = self.getFeatures(agent,gameState,action,successor)
+        
+        temp = []
+        for line in self.dict:
+            temp.append(fea[line])
+        
+        mod = self.getMod(agent,fea,gameState)
+        
+        if mod == "defense1":
+            print 111
+        #print 222
+        return temp,mod#self.getModLabel(mod)
+        
+    def getModLabel(self,mod):
+        if not (mod in self.Mdict):
+            return -1
+        return self.rMdict[mod]
         
     def checkkill(self,agent,gameState,successor,opp):
         #opp=self.opp
@@ -240,6 +282,20 @@ class featuresTool():
     def getHomeDist(self,agent,gameState,action,successor):
         return moreUtil.getHomeDistFeature(self,agent, successor)
         
+    def getObsGhost1Dist(self,agent,gameState,action,successor):
+        poso = gameState.getAgentPosition(self.opp[0])
+        if poso == None:
+            return 99999
+        else: 
+            return agent.getMazeDistance(gameState.getAgentPosition(agent.index),poso)
+        
+    def getObsGhost2Dist(self,agent,gameState,action,successor):
+        poso = gameState.getAgentPosition(self.opp[1])
+        if poso == None:
+            return 99999
+        else: 
+            return agent.getMazeDistance(gameState.getAgentPosition(agent.index),poso)
+    
     def getGhost1Dist(self,agent,gameState,action,successor):
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0])
         
@@ -247,10 +303,15 @@ class featuresTool():
         return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
         
     def getGhost1Close(self,agent,gameState,action,successor):
-        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0]) , ESCAPE_DIST)
+        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0]) , ESCAPE_DIST) 
         
     def getGhost2Close(self,agent,gameState,action,successor):
-        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1]) , ESCAPE_DIST)
+        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1]) , ESCAPE_DIST) 
+        
+    def getHasGhost(self,agent,gameState,action,successor):
+        dist1 = moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0])
+        dist2 = moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
+        return int(min(dist1,dist2) < ESCAPE_DIST) - 0.5
         
     def getInvader1Dist(self,agent,gameState,action,successor):
         return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0])

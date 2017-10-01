@@ -87,10 +87,12 @@ def addLabels(data, discount=0.95):
             seq = seqs[idx]
             vals = [0 for _ in seq]
             for i in list(range(len(seq)-1))[::-1]:
-                state, action, features = seq[i]
+                state, action, features,mod = seq[i]
                 nextState = seq[i+1][0]
                 r = reward.getReward(agent, state, action, nextState)
-                qVal = r + discount * vals[i+1]
+                
+                #qVal = r + discount * vals[i+1]
+                qVal = mod
                 vals[i] = qVal
                 instances.append((state, action, features, nextState, agent, qVal))
     return instances
@@ -112,19 +114,19 @@ def addFeaturesOneGame(sequences, agents):
         seq = sequences[agent.index]
         states = [s for s, _ in seq]
         actions = [a for _, a in seq]
-        features = extractFeatures(agent, states, actions)
-        seqsWithFeat[agent.index] = zip(states, actions, features)
+        features,mods = extractFeatures(agent, states, actions)
+        seqsWithFeat[agent.index] = zip(states, actions, features,mods)
     return seqsWithFeat, agents
 
 if __name__ == "__main__":
-    imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "myTeam.py")
+    imp.load_source("player0", "myTeama.py")
+    imp.load_source("player1", "myTeama.py")
     
-    dir = simulateGames("myTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
+    #dir = simulateGames("myTeama", "myTeama", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     #dir = "replay/Sep-30-19-08-34" #100
     #dir = "replay/Sep-30-19-44-03" #10
-    #dir = "replay/Sep-30-19-39-48" #1
+    dir = "replay/Oct-01-17-22-28" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
@@ -138,9 +140,9 @@ if __name__ == "__main__":
     #actions = IOutil.loadFile("tactions.json")
     #labels = IOutil.loadFile("tlabels.json")
     #weight = train(features, actions, labels)
-    weight = train(features, actions, labels,model ="MLP")
+    #weight = train(features, actions, labels,model ="MLP")
 
 # # save weight
-    IOutil.saveFile(WEIGHT_FILENAME,weight)
+  #  IOutil.saveFile(WEIGHT_FILENAME,weight)
    # with open(WEIGHT_FILENAME, 'w') as f:
    #     pickle.dump(weight, f)

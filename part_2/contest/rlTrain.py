@@ -34,13 +34,17 @@ def extractFeatures(agent, states, actions):
     tool.initGame(agent,states[0])
     
     features = []
+    mods = []
     
     for i in range(len(states)-1):
-        features.append(tool.getTrainSet(agent,states[i],actions[i],None))
-    
+        tfea,tmod = tool.getModSet(agent,states[i],actions[i],None)
+        #features.append(tool.getTrainSet(agent,states[i],actions[i],None))
+        features.append(tfea)
+        mods.append(tmod)
+        
     features.append([0])
     
-    return features
+    return features,mods
 
 def train(features, actions, labels, model = "Linear"):
     # return trained weights

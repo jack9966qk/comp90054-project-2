@@ -166,6 +166,31 @@ def getFoodDists(agent, gameState):
     if len(dists)==0:
         dists = [999999]
     return dists
+    
+def getModSelf(tool,agent,features,gameState):
+    #closestGhost = min(features['Ghost1Close'],Ghost1Close['Ghost2Close'])
+        
+    if features['HomeDist'] >0 and features['Carry']>0 and features['HomeDist']<features['ClostestFoodDist']:
+        return 'backhome'
+    
+    if features['TeamFoodLeft']<=2:
+        return 'backhome'
+    
+    if (features['HasGhost']>0):
+        return "backhome"
+    print (tool.team[0],agent.index)
+       
+    if features["HasInvader1"]>0 and agent.index == tool.team[0]:
+        if features["IsPacman"]>0:
+            return "backhome"
+        return "defense1"
+        
+    if features["HasInvader2"]>0 and agent.index == tool.team[1]:
+        if features["IsPacman"]>0:
+            return "backhome"
+        return "defense2"
+        
+    return "offense"
 
 
 
