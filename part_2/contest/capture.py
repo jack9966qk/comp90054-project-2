@@ -990,7 +990,7 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
       
       from captureAgents import CaptureAgent
       agentsToDump = [CaptureAgent(a.index) for a in agents]
-      components = {'layout': layout, 'agents': agents, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
+      components = {'layout': layout, 'agents': agentsToDump, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
       #f.close()
       print "recorded"
       g.record = cPickle.dumps(components)
