@@ -4,7 +4,7 @@ import util
 import IOutil
 import pickle
 import reward
-from sklearn.neural_network import MLPRegressor
+#from sklearn.neural_network import MLPRegressor
 
 allDict = [
 'WallGrid',
@@ -57,9 +57,9 @@ class featuresTool():
             rMdict[self.Mdict[i]]=i
         self.rMdict = rMdict
         #print self.rMdict
-        if usemodel:
-            with open(modelName) as f:
-                self.model = pickle.load(f) 
+        #if usemodel:
+        #    with open(modelName) as f:
+        #        self.model = pickle.load(f) 
             #self.model = IOutil.loadPickle(modelName)
             
     def initGame(self,agent,gameState):
@@ -228,8 +228,8 @@ class featuresTool():
         
         mod = self.getMod(agent,fea,gameState)
         
-        if mod == "defense1":
-            print 111
+        #if mod == "defense1":
+        #    print 111
         #print 222
         return temp,mod#self.getModLabel(mod)
         

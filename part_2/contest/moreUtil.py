@@ -178,7 +178,6 @@ def getModSelf(tool,agent,features,gameState):
     
     if (features['HasGhost']>0):
         return "backhome"
-    print (tool.team[0],agent.index)
        
     if features["HasInvader1"]>0 and agent.index == tool.team[0]:
         if features["IsPacman"]>0:
