@@ -16,9 +16,7 @@ import IOutil
 WEIGHT_FILENAME = "rlWeights.json"
 
 def recoverFromReplay(replay):
-    sequences = {}
-    for agent in replay["agents"]:
-        sequences[agent.index] = []
+    sequence = []
     gameStates = []
     actions = []
     display = textDisplay.NullGraphics()
@@ -26,7 +24,8 @@ def recoverFromReplay(replay):
     game = rules.newGame(replay["layout"], replay["agents"], display, replay["length"], False, False)
     state = game.state
     for idx, action in replay["actions"]:
-        sequences[idx].append((state, action))
+        agent = replay["agents"][idx]
+        sequence.append((state, action, agent))
         state = state.generateSuccessor(idx, action)
         rules.process(state, game)
     # final state for each agent
@@ -41,9 +40,10 @@ def recoverFromReplay(replay):
             return "Win" if winner == "Red" else "Lose"
         else:
             return "Win" if winner == "Blue" else "Lose"
-    for i in redIndices: sequences[i].append((outcome(True, winner), None))
-    for i in blueIndices: sequences[i].append((outcome(False, winner), None))
-    return sequences, replay["agents"]
+    
+    for a in replay["agents"]:
+        sequence.append((outcome(a.index in redIndices, winner), None, a))
+    return sequence
 
 # single threaded game simulation, writes replay file to directory
 def runGames(redTeam, blueTeam, dir, numGames, prefix):
@@ -81,52 +81,43 @@ def loadReplayFiles(dir):
 def addLabels(data, discount=0.95):
     print "adding labels..."
     instances = []
-    for seqs, agents in data:
+    for seq in data:
         for agent in agents:
-            idx = agent.index
-            seq = seqs[idx]
-            vals = [0 for _ in seq]
-            for i in list(range(len(seq)-1))[::-1]:
-                state, action, features,mod = seq[i]
-                nextState = seq[i+1][0]
+            agent_seq = [(s, a, ag, f, m) for s, a, ag, f, m in seq if ag.index == agent.index]
+            vals = [0 for _ in agent_seq]
+            for i in list(range(len(agent_seq)-1))[::-1]:
+                state, action, agent, features, mod = agent_seq[i]
+                nextState = agent_seq[i+1][0]
                 r = reward.getReward(agent, state, action, nextState)
-                
                 #qVal = r + discount * vals[i+1]
                 qVal = mod
                 vals[i] = qVal
-                instances.append((state, action, features, nextState, agent, qVal))
+                instances.append((state, action, agent, features, mod, qVal))
     return instances
 
 def makeTrainingSet(instances):
     print "making training Set..."
-    features = [feat for _, _, feat, _, _, _ in instances]
-    actions = [act for _, act, _, _, _, _ in instances]
-    labels = [qVal for _, _, _, _, _, qVal in instances]
+    _, actions, _, features, _, labels = zip(*instances)
     return features, actions, labels
 
 def addFeatures(replayData):
     print "adding featrues..."
-    return [addFeaturesOneGame(seqs, ag) for seqs, ag in replayData]
+    return [addFeaturesOneGame(seq) for seq in replayData]
 
-def addFeaturesOneGame(sequences, agents):
-    seqsWithFeat = {}
-    for agent in agents:
-        seq = sequences[agent.index]
-        states = [s for s, _ in seq]
-        actions = [a for _, a in seq]
-        features,mods = extractFeatures(agent, states, actions)
-        seqsWithFeat[agent.index] = zip(states, actions, features,mods)
-    return seqsWithFeat, agents
+def addFeaturesOneGame(sequence):
+    states, actions, agents = zip(*sequence)
+    features, mods = extractFeatures(states, actions, agents)
+    return zip(states, actions, agents, features, mods)
 
 if __name__ == "__main__":
-    imp.load_source("player0", "myTeama.py")
-    imp.load_source("player1", "myTeama.py")
+    imp.load_source("player0", "baselineTeam.py")
+    imp.load_source("player1", "baselineTeam.py")
     
-    #dir = simulateGames("myTeama", "myTeama", numGamesPerRun=1, numRuns=1)
+    dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     #dir = "replay/Sep-30-19-08-34" #100
     #dir = "replay/Sep-30-19-44-03" #10
-    dir = "replay/Oct-01-17-22-28" #1
+    # dir = "replay/Oct-01-17-22-28" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)

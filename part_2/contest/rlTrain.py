@@ -17,34 +17,48 @@ modelName = "modle.pickle"
 #     return temp
 #     pass
 
-def extractFeatures(agent, states, actions):
+
+def extractFeatures(states, actions, agents):
     """
-    Extract features of a game for a agent
-    agent - CaptureAgent object
+    Extract features of a game for all agents
     states - list of states of that agent in the game,
              states[0] is the initial state,
-             states[-1] is the outcome (one of "Win", "Lose", "Tie")
+             states[-4:] are the outcomes (each being one of "Win", "Lose", "Tie")
     actions - list of actions the agent performed at each corresponding state
               actions[-1] = None
+    agents - list of agent for each corresponding state
     return - list of features corresponding to each given state
     """
-    #print states
+    pass
+
+# def extractFeatures(agent, states, actions):
+#     """
+#     Extract features of a game for a agent
+#     agent - CaptureAgent object
+#     states - list of states of that agent in the game,
+#              states[0] is the initial state,
+#              states[-1] is the outcome (one of "Win", "Lose", "Tie")
+#     actions - list of actions the agent performed at each corresponding state
+#               actions[-1] = None
+#     return - list of features corresponding to each given state
+#     """
+#     #print states
     
-    tool = featuresTool.featuresTool()
-    tool.initGame(agent,states[0])
+#     tool = featuresTool.featuresTool()
+#     tool.initGame(agent,states[0])
     
-    features = []
-    mods = []
+#     features = []
+#     mods = []
     
-    for i in range(len(states)-1):
-        tfea,tmod = tool.getModSet(agent,states[i],actions[i],None)
-        #features.append(tool.getTrainSet(agent,states[i],actions[i],None))
-        features.append(tfea)
-        mods.append(tmod)
+#     for i in range(len(states)-1):
+#         tfea,tmod = tool.getModSet(agent,states[i],actions[i],None)
+#         #features.append(tool.getTrainSet(agent,states[i],actions[i],None))
+#         features.append(tfea)
+#         mods.append(tmod)
         
-    features.append([0])
+#     features.append([0])
     
-    return features,mods
+#     return features,mods
 
 def train(features, actions, labels, model = "Linear"):
     # return trained weights
