@@ -30,9 +30,17 @@ def extractFeatures(states, actions, agents):
     return - list of features corresponding to each given state
     """
     tool = featuresTool.featuresTool()
-    tool.initGame(agent,states[0])
+    tool.initGame(agents[0],states[0])
     
     features = []
+    mods = []
+   
+    for i in range(len(states)-1):
+        features.append(tool.getTrainSet(agents[i],states[i],actions[i],None))
+        mods.append([0])
+        
+    features.append([0])
+    return features,mods
     
     pass
 
@@ -117,7 +125,7 @@ def trainLinear(features, labels):
     return np.ndarray.tolist(weights)
     
 def trainMLP(features, labels):
-    model = MLPRegressor([8,5,5,5,5,5,5,5,3],max_iter=500)
+    model = MLPRegressor([15,10,10,10,10,5,5,5,5,5,5,3],max_iter=1000)
     model.fit(features,labels)
     
     IOutil.savePickle(modelName,model)

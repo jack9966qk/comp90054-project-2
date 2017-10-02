@@ -57,9 +57,9 @@ class featuresTool():
             rMdict[self.Mdict[i]]=i
         self.rMdict = rMdict
         #print self.rMdict
-        #if usemodel:
-        #    with open(modelName) as f:
-        #        self.model = pickle.load(f) 
+        if usemodel:
+            with open(modelName) as f:
+                self.model = pickle.load(f) 
             #self.model = IOutil.loadPickle(modelName)
             
     def initGame(self,agent,gameState):

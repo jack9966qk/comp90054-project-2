@@ -112,13 +112,13 @@ def addFeaturesOneGame(sequence):
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "baselineTeam.py")
+    imp.load_source("player1", "myTeama.py")
     
-    dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
+    #dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
     # all games finished, load data from replay files
     #dir = "replay/Sep-30-19-08-34" #100
-    #dir = "replay/Sep-30-19-44-03" #10
-    # dir = "replay/Oct-01-17-22-28" #1
+    dir = "replay/Oct-02-20-30-30" #10
+    #dir = "replay/Oct-02-20-22-02" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
