@@ -82,6 +82,7 @@ def addLabels(data, discount=0.95):
     print "adding labels..."
     instances = []
     for seq in data:
+        agents = { ag for _, _, ag, _, _ in seq }
         for agent in agents:
             agent_seq = [(s, a, ag, f, m) for s, a, ag, f, m in seq if ag.index == agent.index]
             vals = [0 for _ in agent_seq]
