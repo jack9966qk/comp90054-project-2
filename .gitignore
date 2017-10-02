@@ -1,9 +1,8 @@
 *.pyc
 fast-downward/
-*.pickle
-*.cpickle
 score
 ff
 execution.details
 sas_plan
 tmp/
+part_2/contest/replay
