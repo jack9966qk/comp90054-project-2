@@ -29,6 +29,11 @@ def extractFeatures(states, actions, agents):
     agents - list of agent for each corresponding state
     return - list of features corresponding to each given state
     """
+    tool = featuresTool.featuresTool()
+    tool.initGame(agent,states[0])
+    
+    features = []
+    
     pass
 
 # def extractFeatures(agent, states, actions):

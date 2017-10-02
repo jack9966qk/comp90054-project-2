@@ -89,8 +89,8 @@ def addLabels(data, discount=0.95):
                 state, action, agent, features, mod = agent_seq[i]
                 nextState = agent_seq[i+1][0]
                 r = reward.getReward(agent, state, action, nextState)
-                #qVal = r + discount * vals[i+1]
-                qVal = mod
+                qVal = r + discount * vals[i+1]
+                #qVal = mod
                 vals[i] = qVal
                 instances.append((state, action, agent, features, mod, qVal))
     return instances
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     #actions = IOutil.loadFile("tactions.json")
     #labels = IOutil.loadFile("tlabels.json")
     #weight = train(features, actions, labels)
-    #weight = train(features, actions, labels,model ="MLP")
+    weight = train(features, actions, labels,model ="MLP")
 
 # # save weight
   #  IOutil.saveFile(WEIGHT_FILENAME,weight)
