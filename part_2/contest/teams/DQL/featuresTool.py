@@ -4,7 +4,7 @@ import util
 import IOutil
 import pickle
 import reward
-#from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPRegressor
 
 allDict = [
 'WallGrid',

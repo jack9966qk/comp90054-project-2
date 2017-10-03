@@ -133,10 +133,10 @@ if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
     imp.load_source("player1", "myTeama.py")
     
-    dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
+    #dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
     # all games finished, load data from replay files
     #dir = "replay/Oct-03-14-00-15" #100
-    #dir = "replay/Oct-03-14-28-24" #10 #RANDOM
+    dir = "replay/Oct-03-14-28-24" #10 #RANDOM
     #dir = "replay/Oct-03-13-58-41" #10
     #dir = "replay/Oct-03-13-55-05" #1
     replayData = loadReplayFiles(dir)
