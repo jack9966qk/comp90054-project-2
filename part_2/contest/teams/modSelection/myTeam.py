@@ -30,7 +30,7 @@ WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
 MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool(usemodel = False)
-PRINTF = True
+PRINTF = False
 
 
 #################
@@ -155,7 +155,7 @@ class DummyAgent(CaptureAgent):
             print
         
         
-        util.pause()
+        #util.pause()
         return action
     
     def getMod(self,features,gameState):
