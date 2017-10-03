@@ -23,9 +23,28 @@ def recoverFromReplay(replay):
     rules = CaptureRules()
     game = rules.newGame(replay["layout"], replay["agents"], display, replay["length"], False, False)
     state = game.state
+    # print("AGENT POSITION")
+    # print(state.getAgentPosition(0))
+    # print(state.getAgentPosition(1))
+    # print(state.getAgentPosition(2))
+    # print(state.getAgentPosition(3))
+    
     for idx, action in replay["actions"]:
         agent = replay["agents"][idx]
-        sequence.append((state, action, agent))
+
+        observation = state.makeObservation(agent.index)
+        # print(idx)
+        # print("AGENT POSITION")
+        sequence.append((observation, action, agent))
+        # print(observation.getAgentPosition(0))
+        # print(observation.getAgentPosition(1))
+        # print(observation.getAgentPosition(2))
+        # print(observation.getAgentPosition(3))
+        # print("AGENT DISTANCES")
+        # print(observation.getAgentDistances())
+        # state = state.makeObservation(agent.index)
+        
+
         state = state.generateSuccessor(idx, action)
         rules.process(state, game)
     # final state for each agent
@@ -112,12 +131,12 @@ def addFeaturesOneGame(sequence):
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "myTeama.py")
+    imp.load_source("player1", "baselineTeam.py")
     
-    #dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
+    dir = simulateGames("baselineTeam", "baselineTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     #dir = "replay/Sep-30-19-08-34" #100
-    dir = "replay/Oct-02-20-30-30" #10
+    # dir = "replay/Oct-02-20-30-30" #10
     #dir = "replay/Oct-02-20-22-02" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
