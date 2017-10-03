@@ -67,7 +67,7 @@ def recoverFromReplay(replay):
 # single threaded game simulation, writes replay file to directory
 def runGames(redTeam, blueTeam, dir, numGames, prefix):
     call(["python", "./capture.py",
-          "-r", redTeam, "-b", blueTeam,
+          "-r", redTeam, "-b", blueTeam, "-l", "RANDOM",
           "-q", "-n", str(numGames), "--record={}/{}replay".format(dir, prefix)])
     print("{} finished".format(prefix))
 
@@ -131,13 +131,14 @@ def addFeaturesOneGame(sequence):
 
 if __name__ == "__main__":
     imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "baselineTeam.py")
+    imp.load_source("player1", "myTeama.py")
     
-    #dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=1)
+    dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
     # all games finished, load data from replay files
-    #dir = "replay/Oct-02-20-36-11" #100
-    dir = "replay/Oct-02-20-30-30" #10
-    #dir = "replay/Oct-02-21-59-18" #1
+    #dir = "replay/Oct-03-14-00-15" #100
+    #dir = "replay/Oct-03-14-28-24" #10 #RANDOM
+    #dir = "replay/Oct-03-13-58-41" #10
+    #dir = "replay/Oct-03-13-55-05" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
