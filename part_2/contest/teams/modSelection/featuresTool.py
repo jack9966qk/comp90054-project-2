@@ -1,4 +1,9 @@
 
+import os
+import sys
+teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+dir = "teams/{}/".format(teamName)
+sys.path.append(dir)
 import moreUtil
 import util
 import IOutil
@@ -41,6 +46,7 @@ FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 modelName = "modle.pickle"
 SIGHT_RANGE = 6
+SCARED_TIME = 40
 MODS_FILENAME = 'ModDict.json'
 
 class featuresTool():
@@ -80,7 +86,8 @@ class featuresTool():
         self.lastpos = None
         self.lastState = [gameState for i in range(self.teamNum)]
         self.lastpos = [gameState.getAgentPosition(agent.index) for i in range(self.teamNum)]
-            
+        self.lastCapsules = len(agent.getCapsules(gameState))
+        self.scareTimeLeft = 0
        # print self.allpos
         return 
         
@@ -174,12 +181,8 @@ class featuresTool():
         self.features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
         
-        
         if (not agent.index == self.lastidx):
             self.update(agent,self.lastState[agent.index],gameState)
-        self.lastidx = agent.index
-        self.lastState[agent.index] = gameState
-        self.lastpos[agent.index] = gameState.getAgentPosition(agent.index)
         
         #print self.probMap[0]
         #util.pause()
@@ -187,7 +190,14 @@ class featuresTool():
         for line in self.dict:
             self.features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
         
-        #print features
+        if (not self.lastidx ==agent.index):
+            self.lastCapsules = len(agent.getCapsules(gameState))
+        self.lastidx = agent.index
+        self.lastState[agent.index] = gameState
+        self.lastpos[agent.index] = gameState.getAgentPosition(agent.index)
+        
+            
+        #print self.features
         #util.pause()
         return self.features
         
@@ -341,4 +351,33 @@ class featuresTool():
     def getCarry(self,agent,gameState,action,successor):
         #return moreUtil.getCarryFeature(agent)
         return gameState.getAgentState(agent.index).numCarrying
+        
+    def getCapsuleTimeLeft(self,agent,gameState,action,successor):
+        teamNum = self.teamNum
+        lidx = self.lastidx
+        idx = agent.index
+        
+        if not self.lastCapsules == len(agent.getCapsules(gameState)):
+            self.scareTimeLeft = SCARED_TIME *2
+        self.scareTimeLeft = max(self.scareTimeLeft-abs((idx+teamNum-lidx)%teamNum) , 0)
+        
+        if not lidx == idx:
+            self.lastCapsules = len(agent.getCapsules(gameState))
+        
+        return self.scareTimeLeft
+    
+    def getClostestCapsulesDist(self,agent,gameState,action,successor):
+        temp = moreUtil.getCapsulesDists(agent,successor)
+        if len(temp) == 0: temp = [0]
+        return min(temp)
+        
+    def getIsDead(self,agent,gameState,action,successor):
+        selfpos = gameState.getAgentPosition(agent.index)
+        npos = successor.getAgentPosition(agent.index)
+        temp = (agent.getMazeDistance(selfpos,npos)>2 and npos == agent.start)
+        return int(temp)-0.5
+    
+    def getCapsuleLeft(self,agent,gameState,action,successor):
+        return len(moreUtil.getCapsulesDists(agent,successor))\
+        
         

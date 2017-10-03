@@ -11,6 +11,11 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
+import os
+import sys
+teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+dir = "teams/{}/".format(teamName)
+sys.path.append(dir)
 
 from captureAgents import CaptureAgent
 import random, time, util
@@ -25,7 +30,7 @@ WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
 MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool(usemodel = False)
-PRINTF = False
+PRINTF = True
 
 
 #################
@@ -150,7 +155,7 @@ class DummyAgent(CaptureAgent):
             print
         
         
-        #util.pause()
+        util.pause()
         return action
     
     def getMod(self,features,gameState):

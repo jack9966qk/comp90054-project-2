@@ -170,14 +170,22 @@ def getFoodDists(agent, gameState):
 def getModSelf(tool,agent,features,gameState):
     #closestGhost = min(features['Ghost1Close'],Ghost1Close['Ghost2Close'])
         
-    if features['HomeDist'] >0 and features['Carry']>0 and features['HomeDist']<features['ClostestFoodDist']:
-        return 'backhome'
-    
     if features['TeamFoodLeft']<=2:
         return 'backhome'
-    
+        
+    if (features['CapsuleTimeLeft']>0):
+        if features['CapsuleTimeLeft'] > 30:#features['HomeDist']:
+            return 'offense'
+        return "backhome"
+        
     if (features['HasGhost']>0):
         return "backhome"
+        
+    if (features['ClostestCapsulesDist']<features['ClostestFoodDist']) and (features['ClostestCapsulesDist']>0):
+        return "capsule"
+        
+    if features['HomeDist'] >0 and features['Carry']>0 and features['HomeDist']<features['ClostestFoodDist']:
+        return 'backhome'
        
     if features["HasInvader1"]>0 and agent.index == tool.team[0]:
         if features["IsPacman"]>0:
@@ -191,7 +199,11 @@ def getModSelf(tool,agent,features,gameState):
         
     return "offense"
 
-
-
+def getCapsulesDists(agent, gameState):
+    list = agent.getCapsules(gameState)
+    selfpos = gameState.getAgentPosition(agent.index)
+    dists = [agent.getMazeDistance(pos,selfpos) for pos in list]
+    return dists
+    
 
 

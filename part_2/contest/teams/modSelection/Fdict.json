@@ -22,5 +22,9 @@
     "HasKill1",
     "HasKill2",
     "CarryXHome",
+    "ClostestCapsulesDist",
+    "CapsuleLeft",
+    "CapsuleTimeLeft",
+    "IsDead",
     "IsStop"
 ]
