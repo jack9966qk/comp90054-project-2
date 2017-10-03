@@ -29,31 +29,15 @@ def extractFeatures(states, actions, agents):
     agents - list of agent for each corresponding state
     return - list of features corresponding to each given state
     """
-    atool = []
-    
-    atool.append(featuresTool.featuresTool())
-    atool.append(featuresTool.featuresTool())
-    for i in range(states[0].getNumAgents()):
-        if states[0].isOnRedTeam(agents[i].index):
-            atool[0].initGame(agents[i],states[i])
-        else:
-            atool[1].initGame(agents[i],states[i])
+    tool = featuresTool.featuresTool()
+    tool.initGame(agents[0],states[0])
     
     features = []
     mods = []
    
-    for i in range(len(states)):
-        if not type(states[i]) == str:
-            if states[i].isOnRedTeam(agents[i].index):
-                tool = atool[0]
-            else:
-                tool = atool[1]
-        else:
-            tool = atool[0]
+    for i in range(len(states)-1):
         features.append(tool.getTrainSet(agents[i],states[i],actions[i],None))
         mods.append([0])
-   
-
         
     features.append([0])
     return features,mods
