@@ -50,7 +50,7 @@ def extractFeatures(states, actions, agents):
                 tool = atool[1]
         else:
             tool = atool[0]
-        features.append(tool.getTrainSet(agents[i],states[i],actions[i],None))
+        #features.append(tool.getTrainSet(agents[i],states[i],actions[i],None))
         mods.append([0])
    
 
