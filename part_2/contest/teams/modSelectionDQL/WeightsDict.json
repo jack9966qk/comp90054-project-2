@@ -10,7 +10,7 @@
         "IsStop": 0, 
         "Invader2Dist": 0, 
         "TeamIsPacman": 0, 
-        "ObsGhost2Dist": 100, 
+        "ObsGhost2Dist": 201, 
         "CapsuleTimeLeft": 0, 
         "IsPacman": 0, 
         "SumOfFoodDists": 0, 
@@ -24,7 +24,7 @@
         "HasKill1": 0, 
         "HasKill2": 0, 
         "CapsuleLeft": 0, 
-        "ObsGhost1Dist": 100, 
+        "ObsGhost1Dist": 201, 
         "Carry": 0, 
         "Ghost1Close": 0, 
         "HasInvader1": 0

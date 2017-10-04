@@ -26,24 +26,24 @@ def getIntermediaReward(agent, state, action, nextState):
     
     #features = agent.getFeatures(state, action)
     carrys = state.getAgentState(agent.index).numCarrying
-    sum+= -carrys*5
+    sum+= -carrys*2
     if state.getAgentState(agent.index).isPacman and not nextState.getAgentState(agent.index).isPacman and carrys>0:#features['carry'] > 0:
-        sum+= carrys**2 * 100+500#features['carry']**3 * 200
+        sum+= carrys**2 * 10+50#features['carry']**3 * 200
     
     isRed = state.isOnRedTeam(agent.index)
     food = state.getBlueFood() if isRed else state.getRedFood()
     capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
     if food[nx][ny]:
-        sum+= 20 # eat food
+        sum+= 10 # eat food
     if (nx, ny) in capsule:
-        sum+= 30 # eat capsule
+        sum+= 50 # eat capsule
     sum+= -1
     return sum
 
 def getFinalReward(nextState):
-    if nextState == "Tie": return -50
-    elif nextState == "Win": return 100
-    else: return -50
+    if nextState == "Tie": return -500
+    elif nextState == "Win": return 1000
+    else: return -500
 
 def getReward(agent, state, action, nextState):
     if type(nextState) is str:
