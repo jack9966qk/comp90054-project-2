@@ -9,7 +9,9 @@ import util
 import IOutil
 import pickle
 import reward
-#from sklearn.neural_network import MLPRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPClassifier
 
 allDict = [
 'WallGrid',
@@ -44,7 +46,7 @@ DRAW = False
 ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
-modelName = "modle.pickle"
+modelName = dir +"modle.pickle"
 SIGHT_RANGE = 6
 SCARED_TIME = 40
 MODS_FILENAME = 'ModDict.json'
@@ -54,6 +56,7 @@ class featuresTool():
     def __init__(self,dict=None,usemodel = False):
         self.dict = dict
         self.lastState = None
+        self.usemodel = usemodel
         if not dict:
             self.dict = IOutil.loadFile(FileName)
             #self.dict = tdict
@@ -227,24 +230,40 @@ class featuresTool():
         return temp
         
     def getMod(self,agent,features,gameState):
-        mod = moreUtil.getModSelf(self,agent,features,gameState)
+        if self.usemodel:
+            X = []
+            for line in self.dict:
+                X.append(features[line])
+            best = None
+            bestv = -99999999
+            for mod in self.Mdict:
+                tX = X+[self.rMdict[mod]]
+                tempv = self.model.predict([tX])
+                if tempv >bestv:
+                    best = mod
+                    bestv = tempv
+            #print lmod
+            #mod = self.Mdict[lmod[0]]
+        else:
+            mod = moreUtil.getModSelf(self,agent,features,gameState)
         return mod
         
     def getModSet(self,agent,gameState,action,successor):
         fea = util.Counter()
+        feam = util.Counter()
         if not type(gameState) == str:
             fea = self.getFeatures(agent,gameState,action,successor)
-        
+            feam = self.getFeatures(agent,gameState,'Stop',successor)
         temp = []
         for line in self.dict:
             temp.append(fea[line])
         
-        mod = self.getMod(agent,fea,gameState)
+        mod = self.getMod(agent,feam,gameState)
         
         #if mod == "defense1":
         #    print 111
         #print 222
-        return temp,mod#self.getModLabel(mod)
+        return temp,self.getModLabel(mod)
         
     def getModLabel(self,mod):
         if not (mod in self.Mdict):

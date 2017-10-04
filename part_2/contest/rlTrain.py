@@ -5,6 +5,7 @@ import numpy as np
 import IOutil
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPClassifier
 alpha = 0.1 # learning rate
 
 HPFileName = "Hyper.json"
@@ -51,11 +52,14 @@ def extractFeatures(states, actions, agents):
         else:
             tool = atool[0]
         #features.append(tool.getTrainSet(agents[i],states[i],actions[i],None))
-        mods.append([0])
+        fea,mod = tool.getModSet(agents[i],states[i],actions[i],None)
+        features.append(fea)
+        mods.append(mod)
    
 
         
-    features.append([0])
+    #features.append([0])
+    #print features,mods
     return features,mods
     
     pass
@@ -96,7 +100,9 @@ def train(features, actions, labels, model = "Linear"):
     
     if model == "MLP":
         return trainMLP(features, labels)
-        
+    
+    if model == "MLPC":
+        return trainMLPC(features, labels)
         
     print "Undefined model"
     sys.exit(1)
@@ -146,6 +152,21 @@ def trainMLP(features, labels):
     
     IOutil.savePickle(modelName,model)
 
+
+    return 0
+    
+    
+def trainMLPC(features, labels):
+    model = MLPClassifier([15,10,10,5,5,3],max_iter=1000)
+    model.fit(features,labels)
+    
+    IOutil.savePickle(modelName,model)
+    
+    plabels = model.predict(features)
+    
+    #for i in range(len(labels)):
+    #    print (labels[i],plabels[i])
+    
 
     return 0
     

@@ -29,7 +29,7 @@ import featuresTool
 WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
 MODS_FILENAME = 'ModDict.json'
-featuresTool = featuresTool.featuresTool(usemodel = False)
+featuresTool = featuresTool.featuresTool(usemodel = True)
 PRINTF = False
 
 

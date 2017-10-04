@@ -130,7 +130,8 @@ def addLabels(data, discount=0.95):
 
 def makeTrainingSet(instances):
     print "making training Set..."
-    _, actions, _, features, _, labels = zip(*instances)
+    _, actions, _, features, mod, labels = zip(*instances)
+    nfeatrues = [features[i].append(mod[i]) for i in range(len(features))]
     return features, actions, labels
 
 def addFeatures(replayData):
@@ -146,16 +147,14 @@ if __name__ == "__main__":
     imp.load_source("player0", dirt1+"myTeam.py")
     imp.load_source("player1", dirt2+"myTeam.py")
     
-    dir = simulateGames(dirt2+"myTeam", dirt1+"myTeam", numGamesPerRun=1, numRuns=1)
+    #dir = simulateGames(dirt2+"myTeam", dirt1+"myTeam", numGamesPerRun=1, numRuns=10)
     # all games finished, load data from replay files
     #dir = "replay/Oct-03-14-00-15" #100
-    #dir = "replay/Oct-03-14-28-24" #10 #RANDOM
-    #dir = "replay/Oct-03-13-58-41" #10
-    #dir = "replay/Oct-03-13-55-05" #1
+    dir = "replay/Oct-04-18-12-14" #10
+    #dir = "replay/Oct-04-18-08-42" #1
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
-    print instances
     features, actions, labels = makeTrainingSet(instances)
     
     IOutil.saveFile("tfeatures.json",features)
