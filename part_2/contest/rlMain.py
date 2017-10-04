@@ -1,3 +1,16 @@
+dir = "teams/"
+t1 = "baselineTeam"
+t2 = "modSelection"
+dirt1 = dir+t1+'/'
+dirt2 = dir+t2+'/'
+
+import os
+import sys
+teamName = t2
+dir = "teams/{}/".format(teamName)
+sys.path.append(dir)
+
+
 import pickle
 from subprocess import call
 import os
@@ -130,10 +143,10 @@ def addFeaturesOneGame(sequence):
     return zip(states, actions, agents, features, mods)
 
 if __name__ == "__main__":
-    imp.load_source("player0", "baselineTeam.py")
-    imp.load_source("player1", "myTeama.py")
+    imp.load_source("player0", dirt1+"myTeam.py")
+    imp.load_source("player1", dirt2+"myTeam.py")
     
-    #dir = simulateGames("myTeama", "baselineTeam", numGamesPerRun=1, numRuns=10)
+    dir = simulateGames(dirt2+"myTeam", dirt1+"myTeam", numGamesPerRun=1, numRuns=1)
     # all games finished, load data from replay files
     #dir = "replay/Oct-03-14-00-15" #100
     #dir = "replay/Oct-03-14-28-24" #10 #RANDOM
@@ -142,6 +155,7 @@ if __name__ == "__main__":
     replayData = loadReplayFiles(dir)
     replayDataWithFeat = addFeatures(replayData)
     instances = addLabels(replayDataWithFeat)
+    print instances
     features, actions, labels = makeTrainingSet(instances)
     
     IOutil.saveFile("tfeatures.json",features)

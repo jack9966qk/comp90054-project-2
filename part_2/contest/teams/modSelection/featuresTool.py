@@ -67,6 +67,8 @@ class featuresTool():
             with open(modelName) as f:
                 self.model = pickle.load(f) 
             #self.model = IOutil.loadPickle(modelName)
+        
+        
             
     def initGame(self,agent,gameState):
         #if not agent.index == agent.getTeam(gameState)[0]: return
