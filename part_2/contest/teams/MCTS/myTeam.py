@@ -25,7 +25,8 @@ import os
 import moreUtil
 import IOutil
 import featuresTool
-import MCT
+from MCT import MCT
+from math import log, sqrt
 
 WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
@@ -126,9 +127,8 @@ class DummyAgent(CaptureAgent):
         
         features = featuresTool.getFeatures(self,gameState,action)
         sfeatures = featuresTool.getFeatures(self,gameState,"Stop")
-        #mod = self.getMod(self,sfeatures,gameState)
-        mod = featuresTool.getMod(self,sfeatures,gameState)
-        weights = self.weightsDict[mod]
+        mode = featuresTool.getMod(self,sfeatures,gameState)
+        weights = self.weightsDict[mode]
         return features * weights
         
         
@@ -136,23 +136,17 @@ class DummyAgent(CaptureAgent):
         
         # Pick Action
         
-        actions = gameState.getLegalActions(self.index)
-        actions.remove("Stop")
-        values = [self.evaluate(gameState, a) for a in actions]
-        maxValue = max(values)
-        bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+        rootNode = self.MCTS(gameState, 30)
+        children = rootNode.getChild()
+        choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
+        action = choice.getGameState().getAgentState(self.index).getDirection()
         
-        
-        action = random.choice(bestActions)
-        self.lastAction = action
-        
-        #util.pause()
         return action
     
     def MCTS(self, gameState, iteration):
         
         # build initial tree
-        root = MCT(None, gameState.deepcopy())
+        root = MCT(None, gameState.deepCopy())
         actions = gameState.getLegalActions(self.index)
         actions.remove(Directions.STOP)
         successors = [gameState.generateSuccessor(self.index, a) for a in actions]
@@ -166,7 +160,8 @@ class DummyAgent(CaptureAgent):
                 # while current node is not a leaf node
                 # choose a child node that maximises UCB1 score as current node
                 children = curr.getChild()
-                maxScore = None, maxChild = None
+                maxScore = None
+                maxChild = None
                 for node in children:
                     score = self.UCB1(node)
                     if maxScore is None or score > maxScore:
@@ -193,19 +188,21 @@ class DummyAgent(CaptureAgent):
             stateValue = self.evaluate(simulatedState, Directions.STOP)
             self.backprop(curr, stateValue)
             iteration -= 1
+        
+        return root
     
     
     def simulate(self, gameState, step = 20):
         # simulate game for a given number of steps
-        fakeState = gameState.deepcopy()
+        fakeState = gameState.deepCopy()
         while step > 0:
-            actions = gameState.getLegalActions(self.index)
+            actions = fakeState.getLegalActions(self.index)
             # prevent standing by
             actions.remove(Directions.STOP)
             # prevent keeping moving back and forth
-            reverse = Directions.REVERSE[gameState.getAgentState(self.index).getDirection()]
+            reverse = Directions.REVERSE[fakeState.getAgentState(self.index).getDirection()]
             if reverse in actions and len(actions) > 1:
-                actions.remove(reserse)
+                actions.remove(reverse)
             action = random.choice(actions)
             fakeState = fakeState.generateSuccessor(self.index, action)
             step -= 1
@@ -220,7 +217,7 @@ class DummyAgent(CaptureAgent):
             ucb1 = float("inf")
         else:
             avgValue = node.getTotalValue() / node.getVisits()
-            ucb1 = avgValue + C * sqrt(math.log(node.getParent().getVisits()) / n)
+            ucb1 = avgValue + C * sqrt(log(node.getParent().getVisits()) / n)
         return ucb1
     
     
