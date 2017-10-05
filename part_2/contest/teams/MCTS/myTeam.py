@@ -192,9 +192,10 @@ class DummyAgent(CaptureAgent):
         return root
     
     
-    def simulate(self, gameState, step = 20):
+    def simulate(self, gameState, step = 10):
         # simulate game for a given number of steps
         fakeState = gameState.deepCopy()
+        
         while step > 0:
             actions = fakeState.getLegalActions(self.index)
             # prevent standing by
@@ -206,6 +207,9 @@ class DummyAgent(CaptureAgent):
             action = random.choice(actions)
             fakeState = fakeState.generateSuccessor(self.index, action)
             step -= 1
+#            print "step: " + str(step)
+        
+        return fakeState
     
     
     def UCB1(self, node):
@@ -223,8 +227,7 @@ class DummyAgent(CaptureAgent):
     
     def backprop(self, node, value):
         # backpropagation step
-        
-        while node is not None:
+        if node is not None:
             node.visit()
             node.updateValue(value)
             self.backprop(node.getParent(), value)
