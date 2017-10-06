@@ -27,6 +27,7 @@ import IOutil
 import featuresTool
 from MCT import MCT
 from math import log, sqrt
+from capture import AgentRules
 
 WEIGHTS_FILENAME = 'WeightsDict.json'
 DICTS_FILENAME = 'Fdict.json'
@@ -144,6 +145,10 @@ class DummyAgent(CaptureAgent):
         return action
     
     def MCTS(self, gameState, iteration):
+        # 1 tree traversal
+        # 2 node expansion
+        # 3 simulation
+        # 4 backpropagation
         
         # build initial tree
         root = MCT(None, gameState.deepCopy())
@@ -195,17 +200,25 @@ class DummyAgent(CaptureAgent):
     def simulate(self, gameState, step = 10):
         # simulate game for a given number of steps
         fakeState = gameState.deepCopy()
+        opponents = [i for i in self.getOpponents(fakeState) if fakeState.getAgentPosition(i) != None]
         
         while step > 0:
-            actions = fakeState.getLegalActions(self.index)
+            myActions = fakeState.getLegalActions(self.index)
             # prevent standing by
-            actions.remove(Directions.STOP)
+            myActions.remove(Directions.STOP)
             # prevent keeping moving back and forth
             reverse = Directions.REVERSE[fakeState.getAgentState(self.index).getDirection()]
-            if reverse in actions and len(actions) > 1:
-                actions.remove(reverse)
-            action = random.choice(actions)
-            fakeState = fakeState.generateSuccessor(self.index, action)
+            if reverse in myActions and len(myActions) > 1:
+                myActions.remove(reverse)
+            myAction = random.choice(myActions)
+            fakeState = fakeState.generateSuccessor(self.index, myAction)
+            
+            opActions = []
+            for op in opponents:
+                opActions.append(fakeState.getLegalActions(op))
+            for actions, op in zip(opActions, opponents):
+                AgentRules.applyAction(fakeState, random.choice(actions), op)
+
             step -= 1
 #            print "step: " + str(step)
         
@@ -214,8 +227,8 @@ class DummyAgent(CaptureAgent):
     
     def UCB1(self, node):
         # C is a hyperparameter needs to be tuned
-        # UCB1 = avgV + 2 * sqrt (ln(N) / n)
-        C = 2
+        # UCB1 = avgV + C * sqrt (ln(N) / n)
+        C = 0.5
         n = node.getVisits()
         if n == 0:
             ucb1 = float("inf")
