@@ -35,6 +35,7 @@ MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool()
 PRINTF = False
 
+WEIGHTS = {"score": 500, "myFood": 1, "opponentFood": -1}
 
 #################
 # Team creation #
@@ -136,11 +137,20 @@ class DummyAgent(CaptureAgent):
     def chooseAction(self, gameState):
         
         # Pick Action
+        opponents = [i for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
         
-        rootNode = self.MCTS(gameState, 30)
-        children = rootNode.getChild()
-        choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
-        action = choice.getGameState().getAgentState(self.index).getDirection()
+        if len(opponents) > 0:
+            rootNode = self.MCTS(gameState, 50)
+            children = rootNode.getChild()
+            choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
+            action = choice.getGameState().getAgentState(self.index).getDirection()
+        else:
+            actions = gameState.getLegalActions(self.index)
+            actions.remove("Stop")
+            values = [self.evaluate(gameState, a) for a in actions]
+            maxValue = max(values)
+            bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+            action = random.choice(bestActions)
         
         return action
     
@@ -182,24 +192,41 @@ class DummyAgent(CaptureAgent):
             else:
                 # if visited before, expand this node
                 # add new node per legal action and pick one as current node
-                actions = curr.getGameState().getLegalActions(self.index)
-                actions.remove(Directions.STOP)
-                successors = [curr.getGameState().generateSuccessor(self.index, a) for a in actions]
-                children = [MCT(curr, s) for s in successors]
-                curr.addChild(children)
+                
+                state = curr.getGameState().deepCopy()
+                opponents = [i for i in self.getOpponents(s) if s.getAgentPosition(i) != None]
+                if len(opponents) > 0:
+                    op = opponents[0]
+                    opLegalAction = state.getLegalActions(op)
+                    opLegalAction.remove(Directions.STOP)
+                    children = []
+                    for a in opLegalAction:
+                        tempState = state.deepCopy()
+                        AgentRules.applyAction(tempState, a, op)
+                        actions = tempState.getLegalActions(self.index)
+                        actions.remove(Directions.STOP)
+                        successors = [tempState.generateSuccessor(self.index, a) for a in actions]
+                        children += [MCT(curr, s) for s in successors]
+                else:
+                    actions = state.getLegalActions(self.index)
+                    actions.remove(Directions.STOP)
+                    successors = [state.generateSuccessor(self.index, a) for a in actions]
+                    children = [MCT(curr, s) for s in successors]
+                    curr.addChild(children)
                 curr = random.choice(children)
             
             simulatedState = self.simulate(curr.getGameState())
-            stateValue = self.evaluate(simulatedState, Directions.STOP)
+            stateValue = self.evaluateSimulation(simulatedState)
             self.backprop(curr, stateValue)
             iteration -= 1
         
         return root
     
     
-    def simulate(self, gameState, step = 10):
+    def simulate(self, gameState, step = 20):
         # simulate game for a given number of steps
         fakeState = gameState.deepCopy()
+#        opponents = self.getOpponents(fakeState)
         opponents = [i for i in self.getOpponents(fakeState) if fakeState.getAgentPosition(i) != None]
         
         while step > 0:
@@ -213,14 +240,16 @@ class DummyAgent(CaptureAgent):
             myAction = random.choice(myActions)
             fakeState = fakeState.generateSuccessor(self.index, myAction)
             
+            # simulate opponents randomly
             opActions = []
             for op in opponents:
-                opActions.append(fakeState.getLegalActions(op))
+                opLegalAction = fakeState.getLegalActions(op)
+                opLegalAction.remove(Directions.STOP)
+                opActions.append(opLegalAction)
             for actions, op in zip(opActions, opponents):
                 AgentRules.applyAction(fakeState, random.choice(actions), op)
 
             step -= 1
-#            print "step: " + str(step)
         
         return fakeState
     
@@ -245,6 +274,20 @@ class DummyAgent(CaptureAgent):
             node.updateValue(value)
             self.backprop(node.getParent(), value)
     
+    def evaluateSimulation(self, gameState):
+        # evaluate the value for simulated state
+        features = self.getSimulateFeature(gameState)
+        weights = WEIGHTS
+        return features * weights
+    
+    def getSimulateFeature(self, gameState):
+        
+        # features that represent a simulated game state
+        features = util.Counter()
+        features["score"] = self.getScore(gameState)
+        features["myFood"] = len(self.getFoodYouAreDefending(gameState).asList())
+        features["opponentFood"] = len(self.getFood(gameState).asList())
+        return features
     
     def getMod(self,features,gameState):
         #closestGhost = min(features['Ghost1Close'],Ghost1Close['Ghost2Close'])
