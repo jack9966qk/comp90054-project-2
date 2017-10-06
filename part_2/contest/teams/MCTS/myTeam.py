@@ -35,7 +35,7 @@ MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool()
 PRINTF = False
 
-WEIGHTS = {"score": 500, "myFood": 1, "opponentFood": -1}
+WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10, "death": -100}
 
 #################
 # Team creation #
@@ -102,6 +102,7 @@ class DummyAgent(CaptureAgent):
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
         self.middle = (self.size[0]/2) - (self.start[0]%2)
+        self.steps = 10
         
         self.weightsDict = self.loadWeightDict()
         featuresTool.initGame(self,gameState)
@@ -140,9 +141,10 @@ class DummyAgent(CaptureAgent):
         opponents = [i for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
         
         if len(opponents) > 0:
-            rootNode = self.MCTS(gameState, 50)
+            rootNode = self.MCTS(gameState, 30)
             children = rootNode.getChild()
             choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
+#            print choice.getTotalValue()/choice.getVisits()
             action = choice.getGameState().getAgentState(self.index).getDirection()
         else:
             actions = gameState.getLegalActions(self.index)
@@ -193,41 +195,50 @@ class DummyAgent(CaptureAgent):
                 # if visited before, expand this node
                 # add new node per legal action and pick one as current node
                 
+                # simulate opponent if observable
+                # opponent would choose action that minimise our value
                 state = curr.getGameState().deepCopy()
                 opponents = [i for i in self.getOpponents(s) if s.getAgentPosition(i) != None]
                 if len(opponents) > 0:
                     op = opponents[0]
                     opLegalAction = state.getLegalActions(op)
                     opLegalAction.remove(Directions.STOP)
-                    children = []
+                    minScore = 9999999
+                    opState = None
                     for a in opLegalAction:
                         tempState = state.deepCopy()
                         AgentRules.applyAction(tempState, a, op)
-                        actions = tempState.getLegalActions(self.index)
-                        actions.remove(Directions.STOP)
-                        successors = [tempState.generateSuccessor(self.index, a) for a in actions]
-                        children += [MCT(curr, s) for s in successors]
+                        tempScore = self.evaluateSimulation(tempState, state)
+                        if tempScore < minScore:
+                            minScore = tempScore
+                            opState = tempState
+                    actions = opState.getLegalActions(self.index)
+                    actions.remove(Directions.STOP)
+                    successors = [opState.generateSuccessor(self.index, a) for a in actions]
+                    children = [MCT(curr, s) for s in successors]
                 else:
                     actions = state.getLegalActions(self.index)
                     actions.remove(Directions.STOP)
                     successors = [state.generateSuccessor(self.index, a) for a in actions]
                     children = [MCT(curr, s) for s in successors]
                     curr.addChild(children)
+
                 curr = random.choice(children)
             
             simulatedState = self.simulate(curr.getGameState())
-            stateValue = self.evaluateSimulation(simulatedState)
+            stateValue = self.evaluateSimulation(simulatedState, gameState)
             self.backprop(curr, stateValue)
             iteration -= 1
         
         return root
     
     
-    def simulate(self, gameState, step = 20):
+    def simulate(self, gameState):
         # simulate game for a given number of steps
         fakeState = gameState.deepCopy()
 #        opponents = self.getOpponents(fakeState)
         opponents = [i for i in self.getOpponents(fakeState) if fakeState.getAgentPosition(i) != None]
+        step = self.steps
         
         while step > 0:
             myActions = fakeState.getLegalActions(self.index)
@@ -274,19 +285,28 @@ class DummyAgent(CaptureAgent):
             node.updateValue(value)
             self.backprop(node.getParent(), value)
     
-    def evaluateSimulation(self, gameState):
+    def evaluateSimulation(self, gameState, originalState):
         # evaluate the value for simulated state
-        features = self.getSimulateFeature(gameState)
+        features = self.getSimulateFeature(gameState, originalState)
         weights = WEIGHTS
         return features * weights
     
-    def getSimulateFeature(self, gameState):
+    def getSimulateFeature(self, gameState, originalState):
         
         # features that represent a simulated game state
         features = util.Counter()
         features["score"] = self.getScore(gameState)
         features["myFood"] = len(self.getFoodYouAreDefending(gameState).asList())
         features["opponentFood"] = len(self.getFood(gameState).asList())
+        
+        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+        features["numInvaders"] = len(invaders)
+        
+        originalPosition = originalState.getAgentState(self.index).getPosition()
+        simulatePosition = gameState.getAgentState(self.index).getPosition()
+        features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > self.steps
+        
         return features
     
     def getMod(self,features,gameState):
