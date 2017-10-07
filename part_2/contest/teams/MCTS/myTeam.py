@@ -35,8 +35,9 @@ MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool()
 PRINTF = False
 
-WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10, "death": -100}
-
+WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -100,
+           "death": -100, "distanceToFood": -50, "isPacman": 5,
+           "isGhost": 5, "invaderDistance": -100}
 #################
 # Team creation #
 #################
@@ -102,7 +103,7 @@ class DummyAgent(CaptureAgent):
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
         self.middle = (self.size[0]/2) - (self.start[0]%2)
-        self.steps = 10
+        self.steps = 8
         
         self.weightsDict = self.loadWeightDict()
         featuresTool.initGame(self,gameState)
@@ -111,52 +112,30 @@ class DummyAgent(CaptureAgent):
         '''
         Your initialization code goes here, if you need any.
         '''
-    
-    def loadWeightDict(self):
-        weights = IOutil.loadFile(WEIGHTS_FILENAME)
-        Fdict = IOutil.loadFile(DICTS_FILENAME)
-        Mdict = IOutil.loadFile(MODS_FILENAME)
-        weight = util.Counter()
-        for line in Fdict:
-            weight[line] = 0
-        for mod in Mdict:
-            if weights.has_key(mod):
-                weights[mod]=weight+weights[mod]
-            else:
-                weights[mod]=weight+util.Counter()
-        return weights
-        
-    def evaluate(self,gameState,action):
-        
-        features = featuresTool.getFeatures(self,gameState,action)
-        sfeatures = featuresTool.getFeatures(self,gameState,"Stop")
-        mode = featuresTool.getMod(self,sfeatures,gameState)
-        weights = self.weightsDict[mode]
-        return features * weights
         
         
     def chooseAction(self, gameState):
         
         # Pick Action
         opponents = [i for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
+        enemySimulation = len(opponents) > 0
         
-        if len(opponents) > 0:
-            rootNode = self.MCTS(gameState, 30)
-            children = rootNode.getChild()
-            choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
+        evalFunc = "moveForward"
+        myFood = len(self.getFoodYouAreDefending(gameState).asList())
+        if myFood <= 15:
+            evalFunc = "defensive"
+        elif enemySimulation:
+            evalFunc = "realTime"
+        
+        rootNode = self.MCTS(gameState, 40, evalFunc)
+        children = rootNode.getChild()
+        choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
 #            print choice.getTotalValue()/choice.getVisits()
-            action = choice.getGameState().getAgentState(self.index).getDirection()
-        else:
-            actions = gameState.getLegalActions(self.index)
-            actions.remove("Stop")
-            values = [self.evaluate(gameState, a) for a in actions]
-            maxValue = max(values)
-            bestActions = [a for a, v in zip(actions, values) if v == maxValue]
-            action = random.choice(bestActions)
+        action = choice.getGameState().getAgentState(self.index).getDirection()
         
         return action
     
-    def MCTS(self, gameState, iteration):
+    def MCTS(self, gameState, iteration, evalFunc):
         # 1 tree traversal
         # 2 node expansion
         # 3 simulation
@@ -166,6 +145,10 @@ class DummyAgent(CaptureAgent):
         root = MCT(None, gameState.deepCopy())
         actions = gameState.getLegalActions(self.index)
         actions.remove(Directions.STOP)
+        myAction = gameState.getAgentState(self.index).getDirection()
+        reverse = Directions.REVERSE[myAction]
+        if reverse in actions and len(actions) > 1:
+            actions.remove(reverse)
         successors = [gameState.generateSuccessor(self.index, a) for a in actions]
         children = [MCT(root, s) for s in successors]
         root.addChild(children)
@@ -198,20 +181,24 @@ class DummyAgent(CaptureAgent):
                 # simulate opponent if observable
                 # opponent would choose action that minimise our value
                 state = curr.getGameState().deepCopy()
-                opponents = [i for i in self.getOpponents(s) if s.getAgentPosition(i) != None]
+                opponents = [i for i in self.getOpponents(state) if state.getAgentPosition(i) != None]
                 if len(opponents) > 0:
                     op = opponents[0]
                     opLegalAction = state.getLegalActions(op)
                     opLegalAction.remove(Directions.STOP)
                     minScore = 9999999
                     opState = None
+                    l = []
                     for a in opLegalAction:
                         tempState = state.deepCopy()
                         AgentRules.applyAction(tempState, a, op)
-                        tempScore = self.evaluateSimulation(tempState, state)
+                        tempScore = self.evaluateSimulation(tempState, state, evalFunc)
                         if tempScore < minScore:
                             minScore = tempScore
-                            opState = tempState
+                            l = [tempState]
+                        elif tempScore == minScore:
+                            l.append(tempState)
+                    opState = random.choice(l)
                     actions = opState.getLegalActions(self.index)
                     actions.remove(Directions.STOP)
                     successors = [opState.generateSuccessor(self.index, a) for a in actions]
@@ -226,7 +213,7 @@ class DummyAgent(CaptureAgent):
                 curr = random.choice(children)
             
             simulatedState = self.simulate(curr.getGameState())
-            stateValue = self.evaluateSimulation(simulatedState, gameState)
+            stateValue = self.evaluateSimulation(simulatedState, gameState, evalFunc)
             self.backprop(curr, stateValue)
             iteration -= 1
         
@@ -268,7 +255,7 @@ class DummyAgent(CaptureAgent):
     def UCB1(self, node):
         # C is a hyperparameter needs to be tuned
         # UCB1 = avgV + C * sqrt (ln(N) / n)
-        C = 0.5
+        C = sqrt(2)
         n = node.getVisits()
         if n == 0:
             ucb1 = float("inf")
@@ -285,9 +272,14 @@ class DummyAgent(CaptureAgent):
             node.updateValue(value)
             self.backprop(node.getParent(), value)
     
-    def evaluateSimulation(self, gameState, originalState):
+    def evaluateSimulation(self, gameState, originalState, evalFunc):
         # evaluate the value for simulated state
-        features = self.getSimulateFeature(gameState, originalState)
+        if evalFunc == "realTime":
+            features = self.getSimulateFeature(gameState, originalState)
+        elif evalFunc == "moveForward":
+            features = self.moveForwardFeature(gameState)
+        elif evalFunc == "defensive":
+            features = self.defensiveFeature(gameState, originalState)
         weights = WEIGHTS
         return features * weights
     
@@ -306,32 +298,54 @@ class DummyAgent(CaptureAgent):
         originalPosition = originalState.getAgentState(self.index).getPosition()
         simulatePosition = gameState.getAgentState(self.index).getPosition()
         features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > self.steps
+#        if features["death"]: print "die"
         
         return features
     
-    def getMod(self,features,gameState):
-        #closestGhost = min(features['Ghost1Close'],Ghost1Close['Ghost2Close'])
+    def moveForwardFeature(self, gameState):
         
-        if features['HomeDist'] >0 and features['Carry']>0 and features['HomeDist']<features['ClostestFoodDist']:
-            return 'backhome'
+        # features that decide where to move
+        features = util.Counter()
+        features["score"] = self.getScore(gameState)
         
-        if features['TeamFoodLeft']<=2:
-            return 'backhome'
+        myPos = gameState.getAgentState(self.index).getPosition()
+        minDistance = min([self.getMazeDistance(myPos, food) for food in self.getFood(gameState).asList()])
+        features["distanceToFood"] = minDistance
+        features["opponentFood"] = len(self.getFood(gameState).asList())
         
-        if (features['HasGhost']>0):
-            return "backhome"
-            
-        if features["HasInvader1"]>0 and self.index == self.getTeam(gameState)[0]:
-            if features["IsPacman"]>0:
-                return "backhome"
-            return "defense1"
-            
-        if features["HasInvader2"]>0 and self.index == self.getTeam(gameState)[1]:
-            if features["IsPacman"]>0:
-                return "backhome"
-            return "defense2"
-            
-        return "offense"
+        features["isPacman"] = 1 if gameState.getAgentState(self.index).isPacman else 0
+        
+        return features
+    
+    def defensiveFeature(self, gameState, originalState):
+        
+        # features for defense
+        features = util.Counter()
+        
+        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
+        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+        prevState = self.getPreviousObservation()
+        prevFood = self.getFoodYouAreDefending(prevState).asList()
+        currentFood = self.getFoodYouAreDefending(originalState).asList()
+        
+        myPos = gameState.getAgentState(self.index).getPosition()
+        if len(invaders) > 0:
+            dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
+            features["invaderDistance"] = min(dists)
+        elif len(prevFood) > len(currentFood):
+            # there is food being eaten
+            invaderPos = [food for food in prevFood if food not in currentFood]
+            self.believePos = invaderPos[0]
+            features["invaderDistance"] = self.getMazeDistance(myPos, self.believePos)
+        
+        originalPosition = originalState.getAgentState(self.index).getPosition()
+        simulatePosition = gameState.getAgentState(self.index).getPosition()
+#        features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > self.steps
+        
+        features["isGhost"] = 0 if gameState.getAgentState(self.index).isPacman else 1
+        
+        return features
+    
         
 
     def final(self, gameState):
