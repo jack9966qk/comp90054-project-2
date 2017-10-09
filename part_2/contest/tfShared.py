@@ -1,0 +1,3 @@
+TF_AGENT = None
+EPISODES = []
+ACTION_NUMS = []

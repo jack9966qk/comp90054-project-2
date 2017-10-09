@@ -55,7 +55,7 @@ def createTeam(firstIndex, secondIndex, isRed,
 # Agents #
 ##########
 
-def stateToObservation(agent, gameState):
+def makeMatrixObservation(agent, gameState):
     observation = np.zeros((32, 16, 4))
     # self pos
     x, y = gameState.getAgentPosition(agent.index)
@@ -105,7 +105,7 @@ class EnvAgent(CaptureAgent):
         self.socket = socket.socket()
         # print("AGENT CONNECTING TO ENV")
         self.socket.connect(("localhost", 2333))
-        observation = stateToObservation(self, gameState)
+        observation = makeMatrixObservation(self, gameState)
         # print("AGENT SENDING INITIAL OBSERVATION")
         network.send(self.socket, observation)
         self.prevAction = None
@@ -147,7 +147,7 @@ class EnvAgent(CaptureAgent):
     def sendResult(self, gameState, done):
         # print("AGENT SENDING RESULT")
         reward = self.getReward(self.getPreviousObservation(), self.prevAction, gameState)
-        observation = stateToObservation(self, gameState)
+        observation = makeMatrixObservation(self, gameState)
         network.send(self.socket, (observation, reward, done, {}))
 
 
