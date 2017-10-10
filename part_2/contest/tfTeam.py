@@ -12,6 +12,12 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+import os, sys
+# teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+# dir = "teams/{}/".format(teamName)
+dir = "teams/modeSwitchTeam/"
+sys.path.append(dir)
+
 from captureAgents import CaptureAgent
 import random
 import time
@@ -35,13 +41,14 @@ import cPickle
 import os
 import numpy as np
 
+TEAM_NAME = "tfTeam"
 NUM_TO_ACTION = ["South", "North", "East", "West", "Stop"]
 
 def newTfAgent():
     ##### ADAPTED FROM TENSORFORCE BLOGPOST
     # https://reinforce.io/blog/introduction-to-tensorforce/
 
-    network = from_json("tensorforceNetwork.json")
+    network = from_json("tfDense.json")
 
     # Define a state
     states = dict(shape=(8,), type='float')
@@ -148,15 +155,16 @@ class TensorForceAgent(CaptureAgent):
         self.prevState = None
         self.prevAction = None
         self.prevIsIllegal = None
-        self.featuresTool = featuresTool(dict={})
+        self.featuresTool = featuresTool()
         self.featuresTool.initGame(self, gameState)
 
     def chooseAction(self, gameState):
+        # give tfAgent the last observation
         if self.prevScore != None and self.mode != "Test":
             self.giveTfObservation(gameState, terminal=False)
-        
-        actionNum = self.tfAgent.act(self.makeTfState(gameState))
-        tfAction = NUM_TO_ACTION[actionNum]
+
+        # choose the action using tfAgent        
+        tfAction = self.chooseActionFromTfAgent(gameState)
 
         # debug draw agent intention
         x, y = gameState.getAgentPosition(self.index)
@@ -170,9 +178,11 @@ class TensorForceAgent(CaptureAgent):
         elif tfAction == "East":
             self.debugDraw([(x+1, y)], [0, 0, 1])
         
+        # avoid illegal moves
         action = tfAction if tfAction in gameState.getLegalActions() else "Stop"
 
-        tfShared.ACTION_NUMS.append(actionNum)
+        # record choosed action to global var
+        tfShared.ACTION_NUMS.append(tfAction)
 
         # update current to prev
         self.prevScore = self.getScore(gameState)
@@ -181,6 +191,12 @@ class TensorForceAgent(CaptureAgent):
         self.prevIsIllegal = not tfAction in gameState.getLegalActions()
 
         return action
+
+    def chooseActionFromTfAgent(self, gameState):
+        tfState = self.makeTfState(gameState)
+        actionNum = self.tfAgent.act(tfState)
+        tfAction = NUM_TO_ACTION[actionNum]
+        return tfAction
 
     def final(self, gameState):
         if self.prevScore != None and self.mode != "Test":

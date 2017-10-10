@@ -17,13 +17,19 @@ import random, time, util
 from game import Directions, Actions
 import game
 import os
+import sys
+
+teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+dir = "teams/{}/".format(teamName)
+sys.path.append(dir)
+
 import moreUtil
 import IOutil
 import featuresTool
 
-WEIGHTS_FILENAME = 'WeightsDict.json'
-DICTS_FILENAME = 'Fdict.json'
-MODS_FILENAME = 'ModDict.json'
+WEIGHTS_FILENAME = dir + 'WeightsDict.json'
+DICTS_FILENAME = dir + 'Fdict.json'
+MODS_FILENAME = dir + 'ModDict.json'
 featuresTool = featuresTool.featuresTool(usemodel = True)
 PRINTF = False
 

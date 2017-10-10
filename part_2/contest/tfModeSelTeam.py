@@ -19,36 +19,43 @@ import util
 from game import Directions
 import game
 
+from baselineTeam import OffensiveReflexAgent, DefensiveReflexAgent
+
+import tfTeam
 from tensorforce import Configuration
 from tensorforce.agents import PPOAgent, DQNAgent
 from tensorforce.core.networks import layered_network_builder
 from tensorforce.core.networks import from_json
 
-from baselineTeam import OffensiveReflexAgent, DefensiveReflexAgent
-import random
+import reward
 
-from itertools import product
-
-import moreUtil
-import tfTeam
 import tfShared
+
+import os, sys
+# teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+# dir = "teams/{}/".format(teamName)
+dir = "teams/modeSwitchTeam/"
+sys.path.append(dir)
+
+from featuresTool import featuresTool
+import cPickle
 import numpy as np
 
-TEAM_NAME = "tfModeCNNTeam"
-NUM_TO_ACTION = ["South", "North", "East", "West", "Stop"]
+TEAM_NAME = "tfModeSelTeam"
+NUM_TO_MODE = ["backhome", "defense1", "defense2", "offense"]
 
 def newTfAgent():
     ##### ADAPTED FROM TENSORFORCE BLOGPOST
     # https://reinforce.io/blog/introduction-to-tensorforce/
 
-    network = from_json("tfCNN.json")
+    network = from_json("tfDense.json")
 
     # Define a state
-    states = dict(shape=(7, 20, 12), type='float')
+    states = dict(shape=(10,), type='float')
 
     # Define an action (models internally assert whether
     # they support continuous and/or discrete control)
-    actions = dict(continuous=False, num_actions=5)
+    actions = dict(continuous=False, num_actions=4)
 
     # The agent is configured with a single configuration object
     agent_config = Configuration(
@@ -64,6 +71,15 @@ def newTfAgent():
     )
     agent = DQNAgent(config=agent_config)
     return agent
+
+def loadModelIfExists(agent):
+    if os.path.exists("tensorforceModeSelModel/model.cpkt"):
+        agent.model.saver.restore(agent.model.session, "tensorforceModeSelModel/model.cpkt")
+    print("LOADED AGENT MODEL FROM FILE")
+
+def saveModel(agent):
+    return agent.model.saver.save(agent.model.session,
+                                  "tensorforceModeSelModel/model.cpkt")
 
 #################
 # Team creation #
@@ -87,41 +103,50 @@ def createTeam(firstIndex, secondIndex, isRed,
     """
 
     # The following line is an example only; feel free to change it.
-    agent = TensorForceCnnAgent(firstIndex)
+    agent = TensorForceModeSelAgent(firstIndex)
     if useShared == "True":
         print("USE GLOBAL AGENT")
         agent.tfAgent = tfShared.TF_AGENT
     else:
         agent.tfAgent = newTfAgent()
-        tfTeam.loadModelIfExists(agent.tfAgent)
+        loadModelIfExists(agent.tfAgent)
 
     agent.mode = mode
     if mode == "Test":
         print("SET MODE TO TEST")
     else:
         print("SET MODE TO TRAIN")
-
-    # baselineAgent = random.choice([DefensiveReflexAgent(secondIndex), OffensiveReflexAgent(secondIndex)])
-    # return [agent, baselineAgent]
     return [agent, DummyAgent(secondIndex)]
-
-def loadModelIfExists(agent):
-    if os.path.exists("tensorforceCnnModel/model.cpkt"):
-        agent.model.saver.restore(agent.model.session, "tensorforceCnnModel/model.cpkt")
-    print("LOADED AGENT MODEL FROM FILE")
-
-def saveModel(agent):
-    return agent.model.saver.save(agent.model.session,
-                                  "tensorforceCnnModel/model.cpkt")
 
 ##########
 # Agents #
 ##########
 
-class TensorForceCnnAgent(tfTeam.TensorForceAgent):
+class TensorForceModeSelAgent(tfTeam.TensorForceAgent):
     """
     This Pacman Agent acts as a Runner for the Tensorforce agent
     """
+    def chooseActionFromTfAgent(self, gameState):
+        tfState = self.makeTfState(gameState)
+        modeNum = self.tfAgent.act(tfState)
+        mode = NUM_TO_MODE[modeNum]
+        tfShared.ACTION_NUMS.append(mode)
+
+        print("chose mode {}".format(mode))
+
+        def evaluate(gameState,action):
+            features = self.featuresTool.getFeatures(self,gameState,action)
+            weights = self.weightsDict[mode]
+            return features * weights
+
+        actions = gameState.getLegalActions(self.index)
+        actions.remove("Stop")
+        values = [evaluate(gameState, a) for a in actions]
+        maxValue = max(values)
+        bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+        action = random.choice(bestActions)
+        return action
+
     #####################################################
     def getReward(self, gameState, terminal):
         if terminal:
@@ -146,83 +171,18 @@ class TensorForceCnnAgent(tfTeam.TensorForceAgent):
             return r
 
     def makeTfState(self, gameState):
-        observation = np.zeros((7, 20, 12))
-
-        homeLo, homeHi = moreUtil.getHomeArea(gameState, self.red)
-
-        def posToIdx(pos):
-            x, y = pos
-            return moreUtil.getLayoutSize(gameState)[1] - y - 1, x
-
-        allPos = list(product(range(20), range(7)))
-
-        # self ghost/pacman pos [x, y, 0], [x, y, 1]
-        x, y = posToIdx( gameState.getAgentPosition(self.index) )
-        # print("self at {}, {}".format(x, y))
-        if homeLo <= x <= homeHi:
-            observation[x , y, 0] = 1
-        else:
-            observation[x , y, 1] = 1
-        
-        # teammate ghost/pacman pos [x, y, 2], [x, y, 3]
-        for m in self.featuresTool.mate:
-            print(self.featuresTool.probMap[m])
-            x, y = posToIdx( self.featuresTool.probMap[m][0] )
-            if homeLo <= x <= homeHi:
-                observation[x, y, 2] = 1
-            else:
-                observation[x, y, 3] = 1
-        
-        # opponent invader/ghost/scaredGhost pos [x, y, 4], [x, y, 5], [x, y, 6]
-        for o in self.featuresTool.opp:
-            x, y = posToIdx( self.featuresTool.probMap[o][0] )
-            if homeLo <= x <= homeHi:
-                observation[x, y, 4] = 1
-            else:
-                observation[x, y, 5] = 2
-            # TODO scared
-        
-        # food pos [x, y, 7]
-        food = self.getFood(gameState)
-        for pos in allPos:
-            # print(pos)
-            if food[pos[0]][pos[1]]:
-                x, y = posToIdx( pos )
-                observation[x, y, 7] = 1
-
-        # food defending pos [x, y, 8]
-        foodDef = self.getFoodYouAreDefending(gameState)
-        for pos in allPos:
-            if foodDef[pos[0]][pos[1]]:
-                x, y = posToIdx( pos )
-                observation[x, y, 8] = 1
-
-        # wall pos [x, y, 9]
-        wall = gameState.getWalls()
-        for pos in allPos:
-            if wall[pos[0]][pos[1]]:
-                x, y = posToIdx( pos )
-                observation[x, y, 9] = 1
-
-        # capsule pos [x, y, 10]
-        # print(self.getCapsules(gameState))
-        for pos in self.getCapsules(gameState):
-            x, y = posToIdx( pos )
-            observation[x, y, 10] = 1
-
-        for pos in allPos:
-            x, y = posToIdx(pos)
-            if homeLo <= pos[0] <= homeHi:
-                observation[x, y, 11] = 1
-            else:
-                observation[x, y, 11] = -1
-
-        # for i in range(11):
-        #     print(i)
-        #     print(observation[:, :, i])
-        #     print()
-
-        return observation
+        return [
+            self.featuresTool.getClostestFoodDist(self, gameState, "Stop", gameState),
+            self.featuresTool.getTeamFoodLeft(self, gameState, "Stop", gameState),
+            self.featuresTool.getGhost1Dist(self, gameState, "Stop", gameState),
+            self.featuresTool.getGhost2Dist(self, gameState, "Stop", gameState),
+            self.featuresTool.getCarry(self, gameState, "Stop", gameState),
+            self.featuresTool.getHomeDist(self, gameState, "Stop", gameState),
+            self.featuresTool.getIsPacman(self, gameState, "Stop", gameState),
+            self.featuresTool.getSumOfFoodDists(self, gameState, "Stop", gameState),
+            self.featuresTool.getHasInvader1(self, gameState, "Stop", gameState),
+            self.featuresTool.getHasInvader2(self, gameState, "Stop", gameState)
+        ]
 
 
 class DummyAgent(CaptureAgent):

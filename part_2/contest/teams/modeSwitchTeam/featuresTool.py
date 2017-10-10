@@ -1,17 +1,14 @@
-
-import os
-import sys
+import os, sys
 teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
 dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
+
 import moreUtil
 import util
 import IOutil
 import pickle
 import reward
-from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
-from sklearn.neural_network import MLPClassifier
+#from sklearn.neural_network import MLPRegressor
 
 allDict = [
 'WallGrid',
@@ -44,34 +41,32 @@ allDict = [
 
 DRAW = False
 ESCAPE_DIST = 4
-FileName = "Fdict.json"
+FileName = dir + "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
-modelName = dir +"modle.pickle"
+modelName = dir + "modle.pickle"
 SIGHT_RANGE = 6
-SCARED_TIME = 40
-MODS_FILENAME = 'ModDict.json'
+MODS_FILENAME = dir + 'ModDict.json'
 
 class featuresTool():
     
     def __init__(self,dict=None,usemodel = False):
-        # self.dict = dict
-        # self.lastState = None
-        # self.usemodel = usemodel
-        # if not dict:
-        #     self.dict = IOutil.loadFile(FileName)
-        #     #self.dict = tdict
-        # self.Mdict = IOutil.loadFile(MODS_FILENAME)
-        # rMdict = {}
-        # for i in range(len(self.Mdict)):
-        #     rMdict[self.Mdict[i]]=i
-        # self.rMdict = rMdict
-        # #print self.rMdict
-        # if usemodel:
-        #     with open(modelName) as f:
-        #         self.model = pickle.load(f) 
-        #     #self.model = IOutil.loadPickle(modelName)
-        pass
-        
+        self.dict = dict
+        self.lastState = None
+        if not dict:
+            self.dict = IOutil.loadFile(FileName)
+            #self.dict = tdict
+        print("##########INIT#########")
+        print(self.dict)
+        self.Mdict = IOutil.loadFile(MODS_FILENAME)
+        rMdict = {}
+        for i in range(len(self.Mdict)):
+            rMdict[self.Mdict[i]]=i
+        self.rMdict = rMdict
+        #print self.rMdict
+        #if usemodel:
+        #    with open(modelName) as f:
+        #        self.model = pickle.load(f) 
+            #self.model = IOutil.loadPickle(modelName)
             
     def initGame(self,agent,gameState):
         #if not agent.index == agent.getTeam(gameState)[0]: return
@@ -91,8 +86,7 @@ class featuresTool():
         self.lastpos = None
         self.lastState = [gameState for i in range(self.teamNum)]
         self.lastpos = [gameState.getAgentPosition(agent.index) for i in range(self.teamNum)]
-        self.lastCapsules = len(agent.getCapsules(gameState))
-        self.scareTimeLeft = 0
+            
        # print self.allpos
         return 
         
@@ -186,23 +180,19 @@ class featuresTool():
         self.features = util.Counter()
         if successor == None :successor = gameState.generateSuccessor(agent.index, action)
         
+        
         if (not agent.index == self.lastidx):
             self.update(agent,self.lastState[agent.index],gameState)
+        self.lastidx = agent.index
+        self.lastState[agent.index] = gameState
+        self.lastpos[agent.index] = gameState.getAgentPosition(agent.index)
         
-        #print self.probMap[0]
         #util.pause()
         
         for line in self.dict:
             self.features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
         
-        if (not self.lastidx ==agent.index):
-            self.lastCapsules = len(agent.getCapsules(gameState))
-        self.lastidx = agent.index
-        self.lastState[agent.index] = gameState
-        self.lastpos[agent.index] = gameState.getAgentPosition(agent.index)
-        
-            
-        #print self.features
+        #print features
         #util.pause()
         return self.features
         
@@ -230,40 +220,24 @@ class featuresTool():
         return temp
         
     def getMod(self,agent,features,gameState):
-        if self.usemodel:
-            X = []
-            for line in self.dict:
-                X.append(features[line])
-            best = None
-            bestv = -99999999
-            for mod in self.Mdict:
-                tX = X+[self.rMdict[mod]]
-                tempv = self.model.predict([tX])
-                if tempv >bestv:
-                    best = mod
-                    bestv = tempv
-            #print lmod
-            #mod = self.Mdict[lmod[0]]
-        else:
-            mod = moreUtil.getModSelf(self,agent,features,gameState)
+        mod = moreUtil.getModSelf(self,agent,features,gameState)
         return mod
         
     def getModSet(self,agent,gameState,action,successor):
         fea = util.Counter()
-        feam = util.Counter()
         if not type(gameState) == str:
             fea = self.getFeatures(agent,gameState,action,successor)
-            feam = self.getFeatures(agent,gameState,'Stop',successor)
+        
         temp = []
         for line in self.dict:
             temp.append(fea[line])
         
-        mod = self.getMod(agent,feam,gameState)
+        mod = self.getMod(agent,fea,gameState)
         
         #if mod == "defense1":
         #    print 111
         #print 222
-        return temp,self.getModLabel(mod)
+        return temp,mod#self.getModLabel(mod)
         
     def getModLabel(self,mod):
         if not (mod in self.Mdict):
@@ -372,33 +346,4 @@ class featuresTool():
     def getCarry(self,agent,gameState,action,successor):
         #return moreUtil.getCarryFeature(agent)
         return gameState.getAgentState(agent.index).numCarrying
-        
-    def getCapsuleTimeLeft(self,agent,gameState,action,successor):
-        teamNum = self.teamNum
-        lidx = self.lastidx
-        idx = agent.index
-        
-        if not self.lastCapsules == len(agent.getCapsules(gameState)):
-            self.scareTimeLeft = SCARED_TIME *2
-        self.scareTimeLeft = max(self.scareTimeLeft-abs((idx+teamNum-lidx)%teamNum) , 0)
-        
-        if not lidx == idx:
-            self.lastCapsules = len(agent.getCapsules(gameState))
-        
-        return self.scareTimeLeft
-    
-    def getClostestCapsulesDist(self,agent,gameState,action,successor):
-        temp = moreUtil.getCapsulesDists(agent,successor)
-        if len(temp) == 0: temp = [0]
-        return min(temp)
-        
-    def getIsDead(self,agent,gameState,action,successor):
-        selfpos = gameState.getAgentPosition(agent.index)
-        npos = successor.getAgentPosition(agent.index)
-        temp = (agent.getMazeDistance(selfpos,npos)>2 and npos == agent.start)
-        return int(temp)-0.5
-    
-    def getCapsuleLeft(self,agent,gameState,action,successor):
-        return len(moreUtil.getCapsulesDists(agent,successor))\
-        
         
