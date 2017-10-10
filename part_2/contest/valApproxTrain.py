@@ -33,6 +33,9 @@ instances = addLabels(replayDataWithFeat)
 from sklearn.linear_model import SGDRegressor
 model = SGDRegressor()
 
+# from sklearn.linear_model import Ridge
+# model = Ridge()
+
 # model.partial_fit(X_test, y_test)
 # print(model.predict(X_test))
 
@@ -41,7 +44,7 @@ def train(instances, model):
     finish = False
     while not finish:
         l = []
-        for _ in range(500):
+        for _ in range(5000):
             try:
                 l.append(next(instances))
             except StopIteration:
@@ -53,13 +56,13 @@ def train(instances, model):
         i += len(l)
 
         y_predict = model.predict(X)
-        print(y_predict)
+        # print(y_predict)
         y_test_predict = model.predict(X_test)
 
         print("fitted {} instances, train error: {:.4f}, test error: {:.4f}".format(
             i, mean_absolute_error(y, y_predict), mean_absolute_error(y_test, y_test_predict)
         ))
-        if i % 5000 == 0:
+        if i % 50000 == 0:
             print("save model")
             with open("valApproxModel/valApproxModel_{}.cpickle".format(i), "w") as f:
                 cPickle.dump(model, f)
