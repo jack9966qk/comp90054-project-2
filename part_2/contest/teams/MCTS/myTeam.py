@@ -35,8 +35,8 @@ MODS_FILENAME = 'ModDict.json'
 featuresTool = featuresTool.featuresTool()
 PRINTF = False
 
-WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -200,
-           "death": -1000, "distanceToFood": -50, "isPacman": 20, "carry": 100,
+WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10,
+           "death": -300, "distanceToFood": -10, "isPacman": 200, "carry": 100,
            "isGhost": 5, "invaderDistance": -100}
 #################
 # Team creation #
@@ -103,7 +103,7 @@ class DummyAgent(CaptureAgent):
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
         self.middle = (self.size[0]/2) - (self.start[0]%2)
-        self.steps = 10
+        self.steps = 3
         self.believePos = None
         
         featuresTool.initGame(self,gameState)
@@ -126,7 +126,7 @@ class DummyAgent(CaptureAgent):
         elif enemySimulation:
             evalFunc = "realTime"
         
-        rootNode = self.MCTS(gameState, 50, evalFunc)
+        rootNode = self.MCTS(gameState, 30, evalFunc)
         children = rootNode.getChild()
         """
         for child in children:
@@ -229,14 +229,14 @@ class DummyAgent(CaptureAgent):
                 # add new node per legal action and pick one as current node
                 
                 # simulate opponent if observable
-                # opponent would choose an action that minimise our value
+                # opponent would choose an action that minimises our expected value
                 state = curr.getGameState().deepCopy()
                 opponents = [i for i in self.getOpponents(state) if state.getAgentPosition(i) != None]
                 if len(opponents) > 0:
                     op = opponents[0]
                     opLegalAction = state.getLegalActions(op)
                     opLegalAction.remove(Directions.STOP)
-                    minScore = 9999999
+                    minScore = float("inf")
                     opState = None
                     l = []
                     for a in opLegalAction:
@@ -254,7 +254,7 @@ class DummyAgent(CaptureAgent):
                     successors = [opState.generateSuccessor(self.index, a) for a in actions]
                     children = [MCT(curr, s) for s in successors]
                 else:
-                    # if opponent not observable, simulate agent self
+                    # if opponent not observable, simulate agent itself
                     actions = state.getLegalActions(self.index)
                     actions.remove(Directions.STOP)
                     successors = [state.generateSuccessor(self.index, a) for a in actions]
@@ -307,12 +307,12 @@ class DummyAgent(CaptureAgent):
     def UCB1(self, node):
         # C is a hyperparameter needs to be tuned
         # UCB1 = avgV + C * sqrt (ln(N) / n)
-        C = sqrt(2)
+        C = 2
         n = node.getVisits()
         if n == 0:
             ucb1 = float("inf")
         else:
-            avgValue = node.getTotalValue() / node.getVisits()
+            avgValue = node.getTotalValue() / n
             ucb1 = avgValue + C * sqrt(log(node.getParent().getVisits()) / n)
         return ucb1
     
