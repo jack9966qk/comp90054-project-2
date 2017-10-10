@@ -59,10 +59,10 @@ def newTfAgent():
 
     # The agent is configured with a single configuration object
     agent_config = Configuration(
-        batch_size=8,
-        learning_rate=0.001,
-        memory_capacity=800,
-        first_update=80,
+        batch_size=20,
+        learning_rate=0.005,
+        memory_capacity=2000,
+        first_update=20,
         repeat_update=4,
         target_update_frequency=20,
         states=states,

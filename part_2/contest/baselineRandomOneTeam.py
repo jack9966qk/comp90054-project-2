@@ -53,7 +53,10 @@ def createTeam(firstIndex, secondIndex, isRed,
         OffensiveReflexAgent(secondIndex),
         DefensiveReflexAgent(secondIndex)
     ])
-    return [DummyAgent(firstIndex), baselineAgent]
+    if random.random() <= 0.5:
+        return [DummyAgent(firstIndex), baselineAgent]
+    else:
+        return [baselineAgent, DummyAgent(firstIndex)]
 
 ##########
 # Agents #
