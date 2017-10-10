@@ -20,14 +20,14 @@ tfShared.ACTION_NUMS = []
 
 # exit()
 
-logFile = open("{}_log.csv".format(TEAM_NAME, "w")
+logFile = open("{}_log.csv".format(TEAM_NAME), "w")
 logWriter = csv.writer(logFile)
 logWriter.writerow(["finishedGames", "avg score last 100", "wins of last 100", "loses of last 100", "actionFreq"])
 
 # main loop
 for i in xrange(50):
     # run games
-    cmdString = "-r tfCnnTeam -b {} -Q -l layouts/tinyCaptureSuperEasy.lay --redOpts=useShared=True,mode=Train -n 100".format(TEAM_NAME).split()
+    cmdString = "-r {} -b baselineRandomOneTeam -Q --redOpts=useShared=True,mode=Train -n 100".format(TEAM_NAME).split()
     options = readCommand(cmdString)
     runGames(**options)
 

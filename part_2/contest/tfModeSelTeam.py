@@ -38,8 +38,8 @@ dir = "teams/modeSwitchTeam/"
 sys.path.append(dir)
 
 from featuresTool import featuresTool
-import cPickle
 import numpy as np
+import json
 
 TEAM_NAME = "tfModeSelTeam"
 NUM_TO_MODE = ["backhome", "defense1", "defense2", "offense"]
@@ -126,6 +126,11 @@ class TensorForceModeSelAgent(tfTeam.TensorForceAgent):
     """
     This Pacman Agent acts as a Runner for the Tensorforce agent
     """
+    def registerInitialState(self, gameState):
+        tfTeam.TensorForceAgent.registerInitialState(self, gameState)
+        with open(dir + "WeightsDict.json", "r") as f:
+            self.weightsDict = json.load(f)
+
     def chooseActionFromTfAgent(self, gameState):
         tfState = self.makeTfState(gameState)
         modeNum = self.tfAgent.act(tfState)

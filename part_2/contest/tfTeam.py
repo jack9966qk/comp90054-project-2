@@ -13,7 +13,7 @@
 
 
 import os, sys
-# teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
+teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
 # dir = "teams/{}/".format(teamName)
 dir = "teams/modeSwitchTeam/"
 sys.path.append(dir)
