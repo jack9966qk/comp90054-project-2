@@ -12,6 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+import os, sys
 from captureAgents import CaptureAgent
 import random
 import time
@@ -21,28 +22,21 @@ import game
 
 from baselineTeam import OffensiveReflexAgent, DefensiveReflexAgent
 
-import tfTeam
 from tensorforce import Configuration
 from tensorforce.agents import PPOAgent, DQNAgent
 from tensorforce.core.networks import layered_network_builder
 from tensorforce.core.networks import from_json
 
 import reward
+import features
 
 import tfShared
-
-import os, sys
-# teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
-# dir = "teams/{}/".format(teamName)
-dir = "teams/modeSwitchTeam/"
-sys.path.append(dir)
-
-from featuresTool import featuresTool
+import cPickle
+import os
 import numpy as np
-import json
 
-TEAM_NAME = "tfModeSelTeam"
-NUM_TO_MODE = ["backhome", "defense1", "defense2", "offense"]
+TEAM_NAME = "tfTeam"
+NUM_TO_ACTION = ["South", "North", "East", "West", "Stop"]
 
 def newTfAgent():
     ##### ADAPTED FROM TENSORFORCE BLOGPOST
@@ -51,18 +45,18 @@ def newTfAgent():
     network = from_json("tfDense.json")
 
     # Define a state
-    states = dict(shape=(10,), type='float')
+    states = dict(shape=(6,), type='float')
 
     # Define an action (models internally assert whether
     # they support continuous and/or discrete control)
-    actions = dict(continuous=False, num_actions=4)
+    actions = dict(continuous=False, num_actions=5)
 
     # The agent is configured with a single configuration object
     agent_config = Configuration(
-        batch_size=20,
-        learning_rate=0.005,
-        memory_capacity=2000,
-        first_update=20,
+        batch_size=8,
+        learning_rate=0.001,
+        memory_capacity=800,
+        first_update=80,
         repeat_update=4,
         target_update_frequency=20,
         states=states,
@@ -72,14 +66,14 @@ def newTfAgent():
     agent = DQNAgent(config=agent_config)
     return agent
 
-def loadModelIfExists(agent):
-    if os.path.exists("tensorforceModeSelModel/model.cpkt"):
-        agent.model.saver.restore(agent.model.session, "tensorforceModeSelModel/model.cpkt")
+def loadModelIfExists(agent, teamName=TEAM_NAME):
+    if os.path.exists("{}/model.cpkt".format(teamName)):
+        agent.model.saver.restore(agent.model.session, "{}}/model.cpkt".format(teamName))
     print("LOADED AGENT MODEL FROM FILE")
 
-def saveModel(agent):
+def saveModel(agent, TEAM_NAME=TEAM_NAME):
     return agent.model.saver.save(agent.model.session,
-                                  "tensorforceModeSelModel/model.cpkt")
+                                  "{}/model.cpkt".format(teamName))
 
 #################
 # Team creation #
@@ -103,7 +97,7 @@ def createTeam(firstIndex, secondIndex, isRed,
     """
 
     # The following line is an example only; feel free to change it.
-    agent = TensorForceModeSelAgent(firstIndex)
+    agent = TensorForceAgent(firstIndex)
     if useShared == "True":
         print("USE GLOBAL AGENT")
         agent.tfAgent = tfShared.TF_AGENT
@@ -122,72 +116,98 @@ def createTeam(firstIndex, secondIndex, isRed,
 # Agents #
 ##########
 
-class TensorForceModeSelAgent(tfTeam.TensorForceAgent):
+class TensorForceAgent(CaptureAgent):
     """
     This Pacman Agent acts as a Runner for the Tensorforce agent
     """
+    
     def registerInitialState(self, gameState):
-        tfTeam.TensorForceAgent.registerInitialState(self, gameState)
-        with open(dir + "WeightsDict.json", "r") as f:
-            self.weightsDict = json.load(f)
+        """
+        This method handles the initial setup of the
+        agent to populate useful fields (such as what team
+        we're on).
+
+        A distanceCalculator instance caches the maze distances
+        between each pair of positions, so your agents can use:
+        self.distancer.getDistance(p1, p2)
+
+        IMPORTANT: This method may run for at most 15 seconds.
+        """
+
+        '''
+        Make sure you do not delete the following line. If you would like to
+        use Manhattan distances instead of maze distances in order to save
+        on initialization time, please take a look at
+        CaptureAgent.registerInitialState in captureAgents.py.
+        '''
+        CaptureAgent.registerInitialState(self, gameState)
+
+        # initialisation
+        self.prevScore = None
+        self.prevState = None
+        self.prevAction = None
+        self.prevIsIllegal = None
+
+    def chooseAction(self, gameState):
+        # give tfAgent the last observation
+        if self.prevScore != None and self.mode != "Test":
+            self.giveTfObservation(gameState, terminal=False)
+
+        # choose the action using tfAgent        
+        tfAction = self.chooseActionFromTfAgent(gameState)
+
+        # debug draw agent intention
+        x, y = gameState.getAgentPosition(self.index)
+        self.debugClear()
+        if tfAction == "North":
+            self.debugDraw([(x, y+1)], [0, 0, 1])
+        elif tfAction == "South":
+            self.debugDraw([(x, y-1)], [0, 0, 1])
+        elif tfAction == "West":
+            self.debugDraw([(x-1, y)], [0, 0, 1])
+        elif tfAction == "East":
+            self.debugDraw([(x+1, y)], [0, 0, 1])
+        
+        # avoid illegal moves
+        action = tfAction if tfAction in gameState.getLegalActions() else "Stop"
+
+        # record choosed action to global var
+        tfShared.ACTION_NUMS.append(tfAction)
+
+        # update current to prev
+        self.prevScore = self.getScore(gameState)
+        self.prevAction = action
+        self.prevState = gameState
+        self.prevIsIllegal = not tfAction in gameState.getLegalActions()
+
+        return action
 
     def chooseActionFromTfAgent(self, gameState):
         tfState = self.makeTfState(gameState)
-        modeNum = self.tfAgent.act(tfState)
-        mode = NUM_TO_MODE[modeNum]
-        tfShared.ACTION_NUMS.append(mode)
+        actionNum = self.tfAgent.act(tfState)
+        tfAction = NUM_TO_ACTION[actionNum]
+        return tfAction
 
-        print("chose mode {}".format(mode))
-
-        def evaluate(gameState,action):
-            features = self.featuresTool.getFeatures(self,gameState,action)
-            weights = self.weightsDict[mode]
-            return features * weights
-
-        actions = gameState.getLegalActions(self.index)
-        actions.remove("Stop")
-        values = [evaluate(gameState, a) for a in actions]
-        maxValue = max(values)
-        bestActions = [a for a, v in zip(actions, values) if v == maxValue]
-        action = random.choice(bestActions)
-        return action
+    def final(self, gameState):
+        if self.prevScore != None and self.mode != "Test":
+            self.giveTfObservation(gameState, terminal=True)
+        self.tfAgent.reset()
+        tfShared.EPISODES.append(self.getScore(gameState))
+        print("Append")
+        print("len from team", len(tfShared.EPISODES))
+        CaptureAgent.final(self, gameState)
 
     #####################################################
+    def giveTfObservation(self, gameState, terminal):
+        reward = self.getReward(gameState, terminal)
+        print("GIVE TFAGENT OBSERVATION WITH REWARD {}".format(reward))
+        self.tfAgent.observe(reward, terminal)
+
     def getReward(self, gameState, terminal):
-        if terminal:
-            if self.getScore(gameState) == 0:
-                return -1000
-            else: return self.getScore(gameState) * 1000
-        else:
-            r = (self.getScore(gameState) - self.prevScore) * 50
-            x, y = gameState.getAgentPosition(self.index)
-            if self.getFood(self.getPreviousObservation())[x][y]:
-                # ate food
-                r += 5
-            if self.prevIsIllegal:
-                # had invalid action in last step
-                r -= 5
-            prevX, prevY = self.getPreviousObservation().getAgentPosition(self.index)
-            if (abs(prevX - x) + (prevY - y)) > 1:
-                # ate by opponent
-                r -= 10
-            r -= 1 # time
-            print("reward: {}".format(r))
-            return r
+        return reward.getReward(self, gameState, self.prevState, terminal)
 
     def makeTfState(self, gameState):
-        return [
-            self.featuresTool.getClostestFoodDist(self, gameState, "Stop", gameState),
-            self.featuresTool.getTeamFoodLeft(self, gameState, "Stop", gameState),
-            self.featuresTool.getGhost1Dist(self, gameState, "Stop", gameState),
-            self.featuresTool.getGhost2Dist(self, gameState, "Stop", gameState),
-            self.featuresTool.getCarry(self, gameState, "Stop", gameState),
-            self.featuresTool.getHomeDist(self, gameState, "Stop", gameState),
-            self.featuresTool.getIsPacman(self, gameState, "Stop", gameState),
-            self.featuresTool.getSumOfFoodDists(self, gameState, "Stop", gameState),
-            self.featuresTool.getHasInvader1(self, gameState, "Stop", gameState),
-            self.featuresTool.getHasInvader2(self, gameState, "Stop", gameState)
-        ]
+        return features.getFeatures(self, gameState)
 
 
 class DummyAgent(CaptureAgent):

@@ -800,8 +800,8 @@ def readCommand( argv ):
                     help=default('Number of games to play'), default=1)
   parser.add_option('-f', '--fixRandomSeed', action='store_true',
                     help='Fixes the random seed to always play the same game', default=False)
-  parser.add_option('--record', default=None,
-                    help='Writes game histories to a file.')
+  parser.add_option('--record', action='store_true',
+                    help='Writes game histories to a file (named by the time they were played)', default=False)
   parser.add_option('--replay', default=None,
                     help='Replays a recorded game file.')
   parser.add_option('-x', '--numTraining', dest='numTraining', type='int',
@@ -987,14 +987,11 @@ def runGames( layouts, agents, display, length, numGames, record, numTraining, r
       import time, cPickle, game
       #fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
       #f = file(fname, 'w')
-      
-      # from captureAgents import CaptureAgent
-      # agentsToDump = [CaptureAgent(a.index) for a in agents]
-      components = {'layout': layout, 'agents': agents, 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
+      components = {'layout': layout, 'agents': [game.Agent() for a in agents], 'actions': g.moveHistory, 'length': length, 'redTeamName': redTeamName, 'blueTeamName':blueTeamName }
       #f.close()
       print "recorded"
       g.record = cPickle.dumps(components)
-      with open(record + str(i) + '.cpickle','wb') as f:
+      with open('replay-%d'%i,'wb') as f:
         f.write(g.record)
 
   if numGames > 1:

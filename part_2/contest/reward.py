@@ -1,52 +1,21 @@
-import moreUtil
-
-def getIntermediaReward(agent, state, action, nextState):
-    nx, ny = nextState.getAgentPosition(agent.index)
-    x, y = state.getAgentPosition(agent.index)
-    sum = 0
-    
-    team = agent.getTeam(state)
-    teamDist = agent.getMazeDistance(state.getAgentPosition(team[0]), state.getAgentPosition(team[1]))
-    
-    if (abs(nx - x) + abs(ny - y)) > 1: # check death
-        sum+= -50
-        return sum
-    
-    #sum+= teamDist * 1
-    
-    if (nx, ny) == (x, y): # no move
-        sum+= -10
-    
-    enemies = [state.getAgentState(i) for i in agent.getOpponents(state)]
-    invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-    positions = [a.getPosition() for a in invaders]
-    if len(positions) > 0 and not state.getAgentState(agent.index).isPacman:
-        for position in positions:
-            if (nx, ny) == position: sum+= 50 # chase invaders
-    
-    #features = agent.getFeatures(state, action)
-    carrys = state.getAgentState(agent.index).numCarrying
-    sum+= -carrys*2
-    if state.getAgentState(agent.index).isPacman and not nextState.getAgentState(agent.index).isPacman and carrys>0:#features['carry'] > 0:
-        sum+= carrys**2 * 10+50#features['carry']**3 * 200
-    
-    isRed = state.isOnRedTeam(agent.index)
-    food = state.getBlueFood() if isRed else state.getRedFood()
-    capsule = state.getBlueCapsules() if isRed else state.getRedCapsules()
-    if food[nx][ny]:
-        sum+= 10 # eat food
-    if (nx, ny) in capsule:
-        sum+= 50 # eat capsule
-    # sum+= -1
-    return sum
-
-def getFinalReward(nextState):
-    if nextState == "Tie": return -1000
-    elif nextState == "Win": return 10000
-    else: return -5000
-
-def getReward(agent, state, action, nextState):
-    if type(nextState) is str:
-        return getFinalReward(nextState)
+def getReward(agent, gameState, prevState, terminal):
+    if terminal:
+        if agent.getScore(gameState) == 0:
+            return -1000
+        else: return agent.getScore(gameState) * 1000
     else:
-        return getIntermediaReward(agent, state, action, nextState)
+        r = (agent.getScore(gameState) - agent.prevScore) * 50
+        x, y = gameState.getAgentPosition(agent.index)
+        if agent.getFood(prevState)[x][y]:
+            # ate food
+            r += 10
+        if agent.prevIsIllegal:
+            # had invalid action in last step
+            r -= 10
+        prevX, prevY = prevState.getAgentPosition(agent.index)
+        if (abs(prevX - x) + (prevY - y)) > 1:
+            # ate by opponent
+            r -= 50
+        r -= 1 # time
+        print("reward: {}".format(r))
+        return r

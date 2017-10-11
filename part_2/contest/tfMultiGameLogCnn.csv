@@ -1,3 +1,0 @@
-finishedGames,avg score last 100,wins of last 100,loses of last 100,actionFreq
-100,4.99,81,0,"defaultdict(<type 'int'>, {0: 6442, 1: 3415, 2: 221, 3: 7961, 4: 10004})"
-200,4.83,77,0,"defaultdict(<type 'int'>, {0: 13639, 1: 3415, 2: 6816, 3: 14460, 4: 17981})"
