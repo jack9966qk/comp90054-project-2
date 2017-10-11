@@ -163,8 +163,8 @@ class featuresTool():
             
         oppfoods = agent.getFoodYouAreDefending(gameState).asList()
         lastfoods = self.lastoppfoods
-        print (len(lastfoods),len(oppfoods))
-        util.pause()
+        #print (len(lastfoods),len(oppfoods))
+        #util.pause()
         if len(lastfoods) > len(oppfoods):
             ppos = [pos for pos in lastfoods if pos not in oppfoods]
             print ppos
