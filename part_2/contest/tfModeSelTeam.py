@@ -33,7 +33,7 @@ import tfShared
 import features
 import reward
 
-TEAM_NAME = "tfDqfdModeSelTeam"
+TEAM_NAME = "tfModeSelTeam"
 NUM_TO_MODE = ["backhome", "defense", "offense"]
 MODES_TO_NUM = {"backhome": 0, "defense": 1, "defense1": 1, "defense2": 1, "offense": 2}
 
@@ -51,21 +51,18 @@ def newTfAgent():
     actions = dict(continuous=False, num_actions=3)
 
     # The agent is configured with a single configuration object
-    # agent_config = Configuration(
-    #     batch_size=100,
-    #     learning_rate=0.005,
-    #     memory_capacity=2000,
-    #     first_update=20,
-    #     repeat_update=4,
-    #     target_update_frequency=20,
-    #     states=states,
-    #     actions=actions,
-    #     network=network,
-    #     demo_sampling_ratio=0.5
-    # )
-    agent = DQFDAgent(config=Configuration(
-        states=states, actions=actions, network=network
-    ))
+    agent_config = Configuration(
+        batch_size=100,
+        learning_rate=0.005,
+        memory_capacity=2000,
+        first_update=20,
+        repeat_update=4,
+        target_update_frequency=20,
+        states=states,
+        actions=actions,
+        network=network,
+    )
+    agent = DQNAgent(config=agent_config)
     return agent
 
 def loadModelIfExists(agent):
@@ -131,12 +128,6 @@ class TensorForceModeSelAgent(tfBaseTeam.TensorForceAgent):
     """
     def chooseActionFromTfAgent(self, gameState):
         tfState = self.makeTfState(gameState)
-        actionNum = self.tfAgent.act(tfState)
-        tfAction = NUM_TO_ACTION[actionNum]
-        return tfAction
-
-    def chooseActionFromTfAgent(self, gameState):
-        tfState = self.makeTfState(gameState)
         modeNum = self.tfAgent.act(tfState)
         mode = NUM_TO_MODE[modeNum]
         tfShared.ACTION_NUMS.append(mode)
@@ -157,10 +148,10 @@ class TensorForceModeSelAgent(tfBaseTeam.TensorForceAgent):
             return v
 
         actions = gameState.getLegalActions(self.index)
-        actions.remove("Stop")
         values = [evaluate(gameState, a, mode) for a in actions]
         maxValue = max(values)
         bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+        if "Stop" in bestActions: return "Stop"
         action = random.choice(bestActions)
         return action
 

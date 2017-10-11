@@ -71,7 +71,7 @@ def loadModelIfExists(agent, teamName=TEAM_NAME):
         agent.model.saver.restore(agent.model.session, "{}}/model.cpkt".format(teamName))
     print("LOADED AGENT MODEL FROM FILE")
 
-def saveModel(agent, TEAM_NAME=TEAM_NAME):
+def saveModel(agent, teamName=TEAM_NAME):
     return agent.model.saver.save(agent.model.session,
                                   "{}/model.cpkt".format(teamName))
 
