@@ -42,7 +42,7 @@ allDict = [
 ]
 
 
-DRAW = False
+DRAW = True
 ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
@@ -91,9 +91,11 @@ class featuresTool():
         self.lastpos = None
         self.lastState = [gameState for i in range(self.teamNum)]
         self.lastpos = [gameState.getAgentPosition(agent.index) for i in range(self.teamNum)]
+        self.lastoppfoods = agent.getFoodYouAreDefending(gameState).asList()
         self.lastCapsules = len(agent.getCapsules(gameState))
         self.scareTimeLeft = 0
-       # print self.allpos
+        #print self.allpos
+        print self.lastoppfoods
         return 
         
         '''
@@ -159,6 +161,19 @@ class featuresTool():
                 self.probMap[i]=[gameState.getInitialAgentPosition(i)]
                 self.probMap[i]=self.expand(self.probMap[i])
             
+        oppfoods = agent.getFoodYouAreDefending(gameState).asList()
+        lastfoods = self.lastoppfoods
+        print (len(lastfoods),len(oppfoods))
+        util.pause()
+        if len(lastfoods) > len(oppfoods):
+            ppos = [pos for pos in lastfoods if pos not in oppfoods]
+            print ppos
+            for pos in ppos:
+                if (pos in self.probMap[self.opp[0]]) and ((pos not in self.probMap[self.opp[1]])):
+                    self.probMap[self.opp[0]] = [pos]
+                if (pos in self.probMap[self.opp[1]]) and ((pos not in self.probMap[self.opp[0]])):
+                    self.probMap[self.opp[1]] = [pos]
+            
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
         #self.lastidx = agent.index
@@ -196,6 +211,7 @@ class featuresTool():
             self.features[line] = getattr(self,'get'+line)(agent,gameState,action,successor)
         
         if (not self.lastidx ==agent.index):
+            self.lastoppfoods = agent.getFoodYouAreDefending(gameState).asList()
             self.lastCapsules = len(agent.getCapsules(gameState))
         self.lastidx = agent.index
         self.lastState[agent.index] = gameState
