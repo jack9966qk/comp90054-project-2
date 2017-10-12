@@ -31,6 +31,7 @@ WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10,
            "isGhost": 5, "invaderDistance": -10, "homeDist": -10}
 debug = False
 featuresTool = featuresTool.featuresTool()
+
 #################
 # Team creation #
 #################
@@ -95,12 +96,12 @@ class DummyAgent(CaptureAgent):
 
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
-        self.middle = (self.size[0]/2) - (self.start[0]%2)
+        self.middle = self.size[0]/2 if self.red else self.size[0]/2 + 1
         self.steps = 3
-        self.believePos = None
         featuresTool.initGame(self,gameState)
 #        featuresTool.update(self, gameState, gameState)
-        
+        if debug:
+            featuresTool.DRAW = True
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -126,15 +127,16 @@ class DummyAgent(CaptureAgent):
             evalFunc = "realTime"
 #        print evalFunc, self.index
         
-        rootNode = self.MCTS(gameState.deepCopy(), 20, evalFunc)
+        rootNode = self.MCTS(gameState.deepCopy(), 25, evalFunc)
         children = rootNode.getChild()
-        """
-        for child in children:
-            v = child.getTotalValue() / child.getVisits()
-            print v, child.getVisits(), child.getGameState().getAgentState(self.index).getDirection()
-        """
+        
+        if debug:
+            for child in children:
+                v = child.getTotalValue() / child.getVisits()
+                print v, child.getVisits(), child.getGameState().getAgentState(self.index).getDirection()
+        
         choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
-#            print choice.getTotalValue()/choice.getVisits()
+
         action = choice.getGameState().getAgentState(self.index).getDirection()
         
         featuresTool.update(self, gameState, gameState.generateSuccessor(self.index, action))
@@ -301,28 +303,33 @@ class DummyAgent(CaptureAgent):
             values = [self.evaluateSimulation(s, gameState, evalFunc, curr.getDepth()) for s in states]
             stateValue = max(values)
             """
+            # debug tools
             if debug:
+                test = curr
+                while test.getParent() != root:
+                    test = test.getParent()
                 if evalFunc == "realTime":
                     features = self.getRealTimeFeature(simulatedState, gameState, curr.getDepth())
                     s = "die" if features["death"] else "live"
-                    test = curr
-                    while test.getParent() != root:
-                        test = test.getParent()
                     a = test.getGameState().getAgentState(self.index).getDirection()
                     p = simulatedState.getAgentPosition(self.index)
                     pp = test.getParent().getGameState().getAgentPosition(self.index)
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
-                    print self.index, p, a, s, pp, "value", v, iteration
+                    print self.index, p, a, s, pp, "value", v
                 elif evalFunc == "offensive":
                     features = self.offensiveFeature(simulatedState)
-                    test = curr
-                    while test.getParent() != root:
-                        test = test.getParent()
                     a = test.getGameState().getAgentState(self.index).getDirection()
                     p = simulatedState.getAgentPosition(self.index)
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
                     print features, p, a, "value", v
-            
+                elif evalFunc == "backHome":
+                    features = self.backHomeFeature(simulatedState, gameState, curr.getDepth())
+                    s = "die" if features["death"] else "live"
+                    a = test.getGameState().getAgentState(self.index).getDirection()
+                    p = simulatedState.getAgentPosition(self.index)
+                    pp = test.getParent().getGameState().getAgentPosition(self.index)
+                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
+                    print self.index, p, a, s, pp, "value", v
             self.backprop(curr, stateValue)
             iteration -= 1
         
@@ -412,9 +419,11 @@ class DummyAgent(CaptureAgent):
         
         originalPosition = originalState.getAgentState(self.index).getPosition()
         simulatePosition = gameState.getAgentState(self.index).getPosition()
-        features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
-#        print depth
-#        if features["death"]: print "die"
+        if not originalState.getAgentState(self.index).isPacman and abs(originalPosition[0]-self.middle) > 1:
+            features["death"] = 0
+        else:
+            features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
+
         
         return features
     
@@ -466,28 +475,7 @@ class DummyAgent(CaptureAgent):
         myPos = gameState.getAgentState(self.index).getPosition()
         probMap = featuresTool.probMap
         team = self.getTeam(gameState)
-        
-        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-        prevState = self.getPreviousObservation()
-        prevFood = self.getFoodYouAreDefending(prevState).asList()
-        currentFood = self.getFoodYouAreDefending(originalState).asList()
-        """
-        if self.believePos == None:
-            self.believePos = random.choice(currentFood)
-        if len(invaders) > 0:
-            dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-            features["invaderDistance"] = min(dists)
-        elif len(prevFood) > len(currentFood):
-            # if there is food being eaten and opponent unobservable
-            # opponent position is where food vanishes
-            invaderPos = [food for food in prevFood if food not in currentFood]
-            self.believePos = invaderPos[0]
-            features["invaderDistance"] = self.getMazeDistance(myPos, self.believePos)
-        else:
-            features["invaderDistance"] = self.getMazeDistance(myPos, self.believePos)
-#        print features["invaderDistance"]
-        """
+
         if not oppoStates[0].isPacman and not oppoStates[1].isPacman:
             features["invaderDistance"] = 0
         else:
