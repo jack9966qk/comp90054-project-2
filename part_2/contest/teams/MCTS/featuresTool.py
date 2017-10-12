@@ -220,6 +220,8 @@ class featuresTool():
         
     def update(self,agent,lastState,gameState):
         self.updateProbMap(agent,lastState,gameState)
+        self.lastidx = agent.index
+        self.lastoppfoods = agent.getFoodYouAreDefending(gameState).asList()
         if DRAW:
             self.drawProbMap(agent,gameState)
         

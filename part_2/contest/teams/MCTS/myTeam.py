@@ -144,7 +144,7 @@ class DummyAgent(CaptureAgent):
             self.debugClear()
             self.debugDraw(self.p, [0,1,1])
             util.pause()
-        util.pause()
+        #util.pause()
         
         return action
     
