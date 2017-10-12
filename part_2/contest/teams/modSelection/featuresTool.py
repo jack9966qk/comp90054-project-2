@@ -9,6 +9,7 @@ import util
 import IOutil
 import pickle
 import reward
+import copy
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
 from sklearn.neural_network import MLPClassifier
@@ -42,7 +43,7 @@ allDict = [
 ]
 
 
-DRAW = True
+DRAW = False
 ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
@@ -137,7 +138,7 @@ class featuresTool():
             
         for i in opp:
             tempP = self.probMap[i]
-            for pos in tempP:
+            for pos in self.probMap[i]:
                 trueD = util.manhattanDistance(selfpos,pos)
                 prob1 = gameState.getDistanceProb(trueD,noisyDist[i])
                 prob2 = gameState.getDistanceProb(trueD+1,noisyDist[i])
@@ -146,9 +147,10 @@ class featuresTool():
                 if prob == 0:
                     while pos in tempP:
                         tempP.remove(pos)
+            self.probMap[i] = tempP
             
-            
-            for pos in tempP:
+            tempP = self.probMap[i]
+            for pos in self.probMap[i]:
                 obs = util.manhattanDistance(pos,selfpos) < SIGHT_RANGE
                 poso = gameState.getAgentPosition(i)
                 if obs and poso == None:
@@ -167,13 +169,23 @@ class featuresTool():
         #util.pause()
         if len(lastfoods) > len(oppfoods):
             ppos = [pos for pos in lastfoods if pos not in oppfoods]
-            #print ppos
             for pos in ppos:
                 if (pos in self.probMap[self.opp[0]]) and ((pos not in self.probMap[self.opp[1]])):
                     self.probMap[self.opp[0]] = [pos]
                 if (pos in self.probMap[self.opp[1]]) and ((pos not in self.probMap[self.opp[0]])):
                     self.probMap[self.opp[1]] = [pos]
-            
+        
+        for i in self.opp:
+            tempP = self.probMap[i]
+            state = gameState.getAgentState(i).isPacman
+            for pos in self.probMap[i]:
+                if abs(pos[0]-self.start)<=15:
+                    oppstate = False
+                else:
+                    oppstate = True
+                if (oppstate == state):
+                    self.probMap[i].remove(pos)
+        
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
         #self.lastidx = agent.index
@@ -203,6 +215,8 @@ class featuresTool():
         
         if (not agent.index == self.lastidx):
             self.update(agent,self.lastState[agent.index],gameState)
+            #print gameState.getAgentState(self.opp[0]).scaredTimer
+            #print agent
         
         #print self.probMap[0]
         #util.pause()
@@ -319,7 +333,7 @@ class featuresTool():
         return len(agent.getFoodYouAreDefending(successor).asList())
         
     def getTeamDist(self,agent,gameState,action,successor):
-        return agent.getMazeDistance(self.lastpos[self.team[0]], self.lastpos[self.team[0]])
+        return min(agent.getMazeDistance(self.lastpos[self.team[0]], self.lastpos[self.team[1]]),4)
         
     def getIsPacman(self,agent,gameState,action,successor):
         return int(gameState.getAgentState(agent.index).isPacman)-0.5
@@ -390,17 +404,10 @@ class featuresTool():
         return gameState.getAgentState(agent.index).numCarrying
         
     def getCapsuleTimeLeft(self,agent,gameState,action,successor):
-        teamNum = self.teamNum
-        lidx = self.lastidx
-        idx = agent.index
-        
-        if not self.lastCapsules == len(agent.getCapsules(gameState)):
-            self.scareTimeLeft = SCARED_TIME *2
-        self.scareTimeLeft = max(self.scareTimeLeft-abs((idx+teamNum-lidx)%teamNum) , 0)
-        
-        if not lidx == idx:
-            self.lastCapsules = len(agent.getCapsules(gameState))
-        
+        timer = 0
+        for opp in self.opp:
+            timer = max(timer,successor.getAgentState(opp).scaredTimer)
+        self.scareTimeLeft = timer
         return self.scareTimeLeft
     
     def getClostestCapsulesDist(self,agent,gameState,action,successor):
