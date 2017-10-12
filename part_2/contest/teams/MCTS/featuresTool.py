@@ -6,40 +6,9 @@ dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
 import moreUtil
 import util
-import IOutil
-import pickle
-import copy
-
-allDict = [
-'WallGrid',
-'TeamFoodGrid',
-'OpponentFoodGrid',
-'SelfPacmanPositionGrid',
-'SelfGhostPositionGrid',
-'SelfScaredGhostPositionGrid',
-'TeamPacmanPositionGrid',
-'TeamGhostPositionGrid',
-'TeamScaredGhostPositionGrid',
-'Opponent1PacmanPositionGrid',
-'Opponent1GhostPositionGrid',
-'Opponent1ScaredGhostPositionGrid',
-'Opponent2PacmanPositionGrid',
-'Opponent2GhostPositionGrid',
-'Opponent2ScaredGhostPositionGrid',
-'TeamCapsule',
-'OpponentCapsule',
-
-'ClostFoodDist',
-'TeamFoodLeft',
-'OpponentFoodLeft',
-'InvaderDist',
-'HomeDist',
-'Ghost1Dist',
-'Ghost2Dist'
-]
 
 
-DRAW = True
+DRAW = False
 ESCAPE_DIST = 4
 FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
@@ -50,24 +19,9 @@ MODS_FILENAME = 'ModDict.json'
 
 class featuresTool():
     
-    def __init__(self,dict=None,usemodel = False):
+    def __init__(self,dict=None):
         self.dict = dict
-        self.lastState = None
-        self.usemodel = usemodel
-        if not dict:
-            self.dict = IOutil.loadFile(FileName)
-            #self.dict = tdict
-        self.Mdict = IOutil.loadFile(MODS_FILENAME)
-        rMdict = {}
-        for i in range(len(self.Mdict)):
-            rMdict[self.Mdict[i]]=i
-        self.rMdict = rMdict
-        #print self.rMdict
-        if usemodel:
-            with open(modelName) as f:
-                self.model = pickle.load(f) 
-            #self.model = IOutil.loadPickle(modelName)
-        
+        self.lastState = None        
         
             
     def initGame(self,agent,gameState):
@@ -94,18 +48,7 @@ class featuresTool():
         #print self.allpos
         #print self.lastoppfoods
         return 
-        
-        '''
-    def iniProbMap(self):
-        temp = util.Counter()
-        for pos in self.allpos:
-            temp[pos]=0
-        return temp
-        '''
-    def evaluate(self,features):
-        X = self.getFeaturesSet(features)
-        predict = self.model.predict([X])
-        return predict[0]
+
     
     def updateProbMap(self,agent,lastState,gameState):
         opp=self.opp
@@ -175,7 +118,7 @@ class featuresTool():
             tempP = self.probMap[i]
             state = gameState.getAgentState(i).isPacman
             for pos in self.probMap[i]:
-                if abs(pos[0]-self.start)<=15:
+                if abs(pos[0]-self.start) < 15:
                     oppstate = False
                 else:
                     oppstate = True
@@ -227,66 +170,9 @@ class featuresTool():
         
         return 
         
-    def getFeaturesSet(self,featrues):
-        temp = []
-        for line in self.dict:
-            temp.append(featrues[line])
-        return temp
-        
-    def getTrainSet(self,agent,gameState,action,successor):
-        fea = util.Counter()
-        if not type(gameState) == str:
-            fea = self.getFeatures(agent,gameState,action,successor)
-        
-        temp = []
-        for line in self.dict:
-            temp.append(fea[line])
-        return temp
-        
-    def getMod(self,agent,features,gameState):
-        if self.usemodel:
-            X = []
-            for line in self.dict:
-                X.append(features[line])
-            best = None
-            bestv = -99999999
-            for mod in self.Mdict:
-                tX = X+[self.rMdict[mod]]
-                tempv = self.model.predict([tX])
-                if tempv >bestv:
-                    best = mod
-                    bestv = tempv
-            #print lmod
-            #mod = self.Mdict[lmod[0]]
-        else:
-            mod = moreUtil.getModSelf(self,agent,features,gameState)
-        return mod
-        
-    def getModSet(self,agent,gameState,action,successor):
-        fea = util.Counter()
-        feam = util.Counter()
-        if not type(gameState) == str:
-            fea = self.getFeatures(agent,gameState,action,successor)
-            feam = self.getFeatures(agent,gameState,'Stop',successor)
-        temp = []
-        for line in self.dict:
-            temp.append(fea[line])
-        
-        mod = self.getMod(agent,feam,gameState)
-        
-        #if mod == "defense1":
-        #    print 111
-        #print 222
-        return temp,self.getModLabel(mod)
-        
-    def getModLabel(self,mod):
-        if not (mod in self.Mdict):
-            return -1
-        return self.rMdict[mod]
         
     def checkkill(self,agent,gameState,successor,opp):
         #opp=self.opp
-        team = self.team
         
         
         pos1 = gameState.getAgentPosition(opp)
@@ -300,112 +186,5 @@ class featuresTool():
             
                 
         return False
-        
-    def getReward():
-        return 
-        
-    def getClostestFoodDist(self,agent,gameState,action,successor):
-        return min(moreUtil.getFoodDists(agent, successor))
-        
-    def getTeamFoodLeft(self,agent,gameState,action,successor):
-        return len(moreUtil.getFoodDists(agent, successor))
-    
-    def getSumOfFoodDists(self,agent,gameState,action,successor):
-        return sum(moreUtil.getFoodDists(agent, successor))
-        
-    def getOpponentFoodLeft(self,agent,gameState,action,successor):
-        return len(agent.getFoodYouAreDefending(successor).asList())
-        
-    def getTeamDist(self,agent,gameState,action,successor):
-        return min(agent.getMazeDistance(self.lastpos[self.team[0]], self.lastpos[self.team[1]]),4)
-        
-    def getIsPacman(self,agent,gameState,action,successor):
-        return int(gameState.getAgentState(agent.index).isPacman)-0.5
-    
-    def getTeamIsPacman(self,agent,gameState,action,successor):
-        return int(gameState.getAgentState(self.mate[0]).isPacman)-0.5
-        
-    def getHomeDist(self,agent,gameState,action,successor):
-        return moreUtil.getHomeDistFeature(self,agent, successor)
-        
-    def getObsGhost1Dist(self,agent,gameState,action,successor):
-        poso = gameState.getAgentPosition(self.opp[0])
-        if poso == None:
-            return 99999
-        else: 
-            return agent.getMazeDistance(gameState.getAgentPosition(agent.index),poso)
-        
-    def getObsGhost2Dist(self,agent,gameState,action,successor):
-        poso = gameState.getAgentPosition(self.opp[1])
-        if poso == None:
-            return 99999
-        else: 
-            return agent.getMazeDistance(gameState.getAgentPosition(agent.index),poso)
-    
-    def getGhost1Dist(self,agent,gameState,action,successor):
-        return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0])
-        
-    def getGhost2Dist(self,agent,gameState,action,successor):
-        return moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
-        
-    def getGhost1Close(self,agent,gameState,action,successor):
-        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0]) , ESCAPE_DIST) 
-        
-    def getGhost2Close(self,agent,gameState,action,successor):
-        return min(moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1]) , ESCAPE_DIST) 
-        
-    def getHasGhost(self,agent,gameState,action,successor):
-        dist1 = moreUtil.getGhostDistFeature(self,agent, successor,self.opp[0])
-        dist2 = moreUtil.getGhostDistFeature(self,agent, successor,self.opp[1])
-        return int(min(dist1,dist2) < ESCAPE_DIST) - 0.5
-        
-    def getInvader1Dist(self,agent,gameState,action,successor):
-        return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0])
-        
-    def getInvader2Dist(self,agent,gameState,action,successor):
-        return moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1])
-        
-    def getHasInvader1(self,agent,gameState,action,successor):
-        return int(not moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[0]) == 999999)-0.5
-        
-    def getHasInvader2(self,agent,gameState,action,successor):
-        return int(not moreUtil.getInvaderDistFeature(self,agent, successor,self.opp[1]) == 999999)-0.5
-        
-    def getHasKill1(self,agent,gameState,action,successor):
-        return int(self.checkkill(agent,gameState,successor,self.opp[0]))-0.5
-        
-    def getHasKill2(self,agent,gameState,action,successor):
-        return int(self.checkkill(agent,gameState,successor,self.opp[1]))-0.5
-        
-    def getCarryXHome(self,agent,gameState,action,successor):
-        return moreUtil.getHomeDistFeature(self,agent, successor) * gameState.getAgentState(agent.index).numCarrying
-        
-    def getIsStop(self,agent,gameState,action,successor):
-        return int(action == "Stop")-0.5
-        
-    def getCarry(self,agent,gameState,action,successor):
-        #return moreUtil.getCarryFeature(agent)
-        return gameState.getAgentState(agent.index).numCarrying
-        
-    def getCapsuleTimeLeft(self,agent,gameState,action,successor):
-        timer = 0
-        for opp in self.opp:
-            timer = max(timer,successor.getAgentState(opp).scaredTimer)
-        self.scareTimeLeft = timer
-        return self.scareTimeLeft
-    
-    def getClostestCapsulesDist(self,agent,gameState,action,successor):
-        temp = moreUtil.getCapsulesDists(agent,successor)
-        if len(temp) == 0: temp = [0]
-        return min(temp)
-        
-    def getIsDead(self,agent,gameState,action,successor):
-        selfpos = gameState.getAgentPosition(agent.index)
-        npos = successor.getAgentPosition(agent.index)
-        temp = (agent.getMazeDistance(selfpos,npos)>2 and npos == agent.start)
-        return int(temp)-0.5
-    
-    def getCapsuleLeft(self,agent,gameState,action,successor):
-        return len(moreUtil.getCapsulesDists(agent,successor))\
         
         

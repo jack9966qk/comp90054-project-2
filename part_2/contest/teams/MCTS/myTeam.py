@@ -30,7 +30,7 @@ WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10,
            "death": -500, "distanceToFood": -10, "isPacman": 20, "carry": 100,
            "isGhost": 5, "invaderDistance": -10, "homeDist": -10}
 debug = False
-featuresTool = featuresTool.featuresTool(usemodel = False)
+featuresTool = featuresTool.featuresTool()
 #################
 # Team creation #
 #################
@@ -99,6 +99,7 @@ class DummyAgent(CaptureAgent):
         self.steps = 3
         self.believePos = None
         featuresTool.initGame(self,gameState)
+#        featuresTool.update(self, gameState, gameState)
         
         '''
         Your initialization code goes here, if you need any.
@@ -108,6 +109,7 @@ class DummyAgent(CaptureAgent):
     def chooseAction(self, gameState):
         
         # Pick Action
+        oppoState = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
         opponentsPos = [gameState.getAgentPosition(i) for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
         myPos = gameState.getAgentState(self.index).getPosition()
         enemySimulation = False
@@ -116,10 +118,9 @@ class DummyAgent(CaptureAgent):
                 enemySimulation = True
         
         evalFunc = "offensive"
-        myFood = len(self.getFoodYouAreDefending(gameState).asList())
         if gameState.getAgentState(self.index).numCarrying >= 3:
             evalFunc = "backHome"
-        elif myFood <= 15:
+        elif oppoState[0].isPacman or oppoState[1].isPacman:
             evalFunc = "defensive"
         elif enemySimulation:
             evalFunc = "realTime"
@@ -136,15 +137,13 @@ class DummyAgent(CaptureAgent):
 #            print choice.getTotalValue()/choice.getVisits()
         action = choice.getGameState().getAgentState(self.index).getDirection()
         
-        prevState = self.getPreviousObservation()
-        if prevState == None: prevState = gameState
-        featuresTool.update(self, prevState, gameState)
+        featuresTool.update(self, gameState, gameState.generateSuccessor(self.index, action))
         
         if debug:
             self.debugClear()
             self.debugDraw(self.p, [0,1,1])
             util.pause()
-        #util.pause()
+#        util.pause()
         
         return action
     
@@ -462,14 +461,18 @@ class DummyAgent(CaptureAgent):
         
         # features for defense
         features = util.Counter()
+        opponents = self.getOpponents(gameState)
+        oppoStates = [gameState.getAgentState(i) for i in opponents]
+        myPos = gameState.getAgentState(self.index).getPosition()
+        probMap = featuresTool.probMap
+        team = self.getTeam(gameState)
         
         enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
         invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
         prevState = self.getPreviousObservation()
         prevFood = self.getFoodYouAreDefending(prevState).asList()
         currentFood = self.getFoodYouAreDefending(originalState).asList()
-        
-        myPos = gameState.getAgentState(self.index).getPosition()
+        """
         if self.believePos == None:
             self.believePos = random.choice(currentFood)
         if len(invaders) > 0:
@@ -484,7 +487,19 @@ class DummyAgent(CaptureAgent):
         else:
             features["invaderDistance"] = self.getMazeDistance(myPos, self.believePos)
 #        print features["invaderDistance"]
-        
+        """
+        if not oppoStates[0].isPacman and not oppoStates[1].isPacman:
+            features["invaderDistance"] = 0
+        else:
+            if oppoStates[0].isPacman and oppoStates[1].isPacman:
+                if self.index == team[0]:
+                    features["invaderDistance"] = min([self.getMazeDistance(myPos, p) for p in probMap[opponents[0]]])
+                else:
+                    features["invaderDistance"] = min([self.getMazeDistance(myPos, p) for p in probMap[opponents[1]]])
+            else:
+                op = opponents[0] if oppoStates[0].isPacman else opponents[1]
+                features["invaderDistance"] = min([self.getMazeDistance(myPos, p) for p in probMap[op]])
+             
         features["myFood"] = len(self.getFoodYouAreDefending(gameState).asList())
         features["isGhost"] = 0 if gameState.getAgentState(self.index).isPacman else 1
         
