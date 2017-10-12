@@ -30,7 +30,7 @@ WEIGHTS = {"score": 1000, "myFood": 5, "opponentFood": -5, "numInvaders": -10,
            "death": -300, "distanceToFood": -10, "isPacman": 20, "carry": 100,
            "isGhost": 5, "invaderDistance": -10, "homeDist": -10}
 DEBUG = False
-featuresTool = featuresTool.featuresTool()
+mapTool = featuresTool.featuresTool()
 
 #################
 # Team creation #
@@ -98,7 +98,7 @@ class DummyAgent(CaptureAgent):
         self.size = (self.walls.width,self.walls.height)
         self.middle = self.size[0]/2 if self.red else self.size[0]/2 + 1
         self.steps = 3
-        featuresTool.initGame(self,gameState)
+        mapTool.initGame(self,gameState)
 #        featuresTool.update(self, gameState, gameState)
         '''
         Your initialization code goes here, if you need any.
@@ -137,13 +137,14 @@ class DummyAgent(CaptureAgent):
 
         action = choice.getGameState().getAgentState(self.index).getDirection()
         
-        featuresTool.update(self, gameState, gameState.generateSuccessor(self.index, action))
+        mapTool.update(self, gameState, gameState.generateSuccessor(self.index, action))
         
         if DEBUG:
             self.debugClear()
             self.debugDraw(self.p, [0,1,1])
             util.pause()
-#        util.pause()
+        if featuresTool.DRAW:
+            util.pause()
         
         return action
     
@@ -336,6 +337,7 @@ class DummyAgent(CaptureAgent):
                     p = simulatedState.getAgentPosition(self.index)
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
                     print evalFunc, p, a, s, v
+            
             self.backprop(curr, stateValue)
             iteration -= 1
         
@@ -476,7 +478,7 @@ class DummyAgent(CaptureAgent):
         opponents = self.getOpponents(gameState)
         oppoStates = [gameState.getAgentState(i) for i in opponents]
         myPos = gameState.getAgentState(self.index).getPosition()
-        probMap = featuresTool.probMap
+        probMap = mapTool.probMap
         team = self.getTeam(gameState)
 
         if not oppoStates[0].isPacman and not oppoStates[1].isPacman:

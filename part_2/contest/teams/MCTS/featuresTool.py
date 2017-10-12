@@ -4,7 +4,6 @@ import sys
 teamName = os.path.split(os.path.dirname(os.path.abspath(__file__)))[1]
 dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
-import moreUtil
 import util
 import copy
 
@@ -114,7 +113,7 @@ class featuresTool():
                     self.probMap[self.opp[1]] = [pos]
         
         for i in self.opp:
-            tempP = self.probMap[i]
+            tempP = copy.copy(self.probMap[i])
             state = gameState.getAgentState(i).isPacman
             for pos in self.probMap[i]:
                 if abs(pos[0]-self.start) < 15:
@@ -122,7 +121,9 @@ class featuresTool():
                 else:
                     oppstate = True
                 if (oppstate == state):
-                    self.probMap[i].remove(pos)
+                    tempP.remove(pos)
+        if len(tempP) != 0:
+            self.probMap[i] = tempP
         
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
