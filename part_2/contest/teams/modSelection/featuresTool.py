@@ -95,7 +95,7 @@ class featuresTool():
         self.lastCapsules = len(agent.getCapsules(gameState))
         self.scareTimeLeft = 0
         #print self.allpos
-        print self.lastoppfoods
+        #print self.lastoppfoods
         return 
         
         '''
@@ -167,7 +167,7 @@ class featuresTool():
         #util.pause()
         if len(lastfoods) > len(oppfoods):
             ppos = [pos for pos in lastfoods if pos not in oppfoods]
-            print ppos
+            #print ppos
             for pos in ppos:
                 if (pos in self.probMap[self.opp[0]]) and ((pos not in self.probMap[self.opp[1]])):
                     self.probMap[self.opp[0]] = [pos]
