@@ -58,6 +58,8 @@ def getGhostDistFeature(featruesTool,agent, successor,opp):
     myState = successor.getAgentState(agent.index)
     myPos = myState.getPosition()
     minv = 999999
+    if successor.getAgentState(opp).scaredTimer>0:
+        return minv
     
     for pos in allpos:
         if not isInvader(featruesTool,pos):
@@ -172,14 +174,21 @@ def getModSelf(tool,agent,features,gameState):
         
     if features['TeamFoodLeft']<=2:
         return 'backhome'
-        
+    
+    '''
     if (features['CapsuleTimeLeft']>0):
         if features['CapsuleTimeLeft'] > 30:#features['HomeDist']:
             return 'offense'
         return "backhome"
-        
+    '''
+    if (features['CapsuleTimeLeft']<features['HomeDist']) and (features['CapsuleTimeLeft']>0):
+        return "backhome"
+    
     if (features['HasGhost']>0):
         return "backhome"
+        
+    if (features['ClostestCapsulesDist']<features['ObsGhost1Dist']) and (features['ClostestCapsulesDist']<features['ObsGhost2Dist']) and (features['ClostestCapsulesDist']>0):
+        return "capsule"
         
     if (features['ClostestCapsulesDist']<features['ClostestFoodDist']) and (features['ClostestCapsulesDist']>0):
         return "capsule"

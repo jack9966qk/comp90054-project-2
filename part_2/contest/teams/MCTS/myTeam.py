@@ -26,15 +26,11 @@ from MCT import MCT
 from math import log, sqrt
 from capture import AgentRules
 
-WEIGHTS_FILENAME = 'WeightsDict.json'
-DICTS_FILENAME = 'Fdict.json'
-MODS_FILENAME = 'ModDict.json'
-featuresTool = featuresTool.featuresTool()
-PRINTF = False
-
 WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10,
-           "death": -500, "distanceToFood": -1, "isPacman": 20, "carry": 100,
+           "death": -500, "distanceToFood": -10, "isPacman": 20, "carry": 100,
            "isGhost": 5, "invaderDistance": -10, "homeDist": -10}
+debug = False
+featuresTool = featuresTool.featuresTool(usemodel = False)
 #################
 # Team creation #
 #################
@@ -102,7 +98,6 @@ class DummyAgent(CaptureAgent):
         self.middle = (self.size[0]/2) - (self.start[0]%2)
         self.steps = 3
         self.believePos = None
-        
         featuresTool.initGame(self,gameState)
         
         '''
@@ -140,11 +135,16 @@ class DummyAgent(CaptureAgent):
         choice = max(children, key = lambda x: x.getTotalValue() / x.getVisits())
 #            print choice.getTotalValue()/choice.getVisits()
         action = choice.getGameState().getAgentState(self.index).getDirection()
-        """
-        self.debugClear()
-        self.debugDraw(self.p, [0,1,1])
+        
+        prevState = self.getPreviousObservation()
+        featuresTool.update(self, prevState, gameState)
+        
+        if debug:
+            self.debugClear()
+            self.debugDraw(self.p, [0,1,1])
+            util.pause()
         util.pause()
-        """
+        
         return action
     
     def simulateDeadEnd(self, gameState, action, prevFood, step):
@@ -204,8 +204,7 @@ class DummyAgent(CaptureAgent):
         backup = list(actions)
         foodNum = len(self.getFood(gameState).asList())
         for action in actions:
-            steps = self.steps
-            if self.simulateDeadEnd(gameState, action, foodNum, steps):
+            if self.simulateDeadEnd(gameState, action, foodNum, 5):
                 actions.remove(action)
         if len(actions) == 0:
             actions = backup
@@ -255,9 +254,9 @@ class DummyAgent(CaptureAgent):
                         # simulate being chased
                         opPos = state.getAgentPosition(op)
                         myPos = state.getAgentPosition(self.index)
-                        # find the action that closing to our agent position
+                        # find the action that moves closest to our agent position
                         minAct = min(opLegalAction, key = lambda x: self.getMazeDistance(myPos, Actions.getSuccessor(opPos, x)))
-#                        print myPos, opPos, minAct
+#                        print myPos, opPos, minAct, "iteration", iteration
                         opState = state.deepCopy()
                         AgentRules.applyAction(opState, minAct, op)
                     else:
@@ -302,19 +301,28 @@ class DummyAgent(CaptureAgent):
             values = [self.evaluateSimulation(s, gameState, evalFunc, curr.getDepth()) for s in states]
             stateValue = max(values)
             """
-            """
-            if evalFunc == "offensive":
-                features = self.getOffensiveFeature(simulatedState, gameState, curr.getDepth())
-                s = "die" if features["death"] else "live"
-                test = curr
-                while test.getParent() != root:
-                    test = test.getParent()
-                a = test.getGameState().getAgentState(self.index).getDirection()
-                p = simulatedState.getAgentPosition(self.index)
-                pp = test.getParent().getGameState().getAgentPosition(self.index)
-                v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
-                print self.index, p, a, s, pp, "value", v
-            """
+            if debug:
+                if evalFunc == "realTime":
+                    features = self.getRealTimeFeature(simulatedState, gameState, curr.getDepth())
+                    s = "die" if features["death"] else "live"
+                    test = curr
+                    while test.getParent() != root:
+                        test = test.getParent()
+                    a = test.getGameState().getAgentState(self.index).getDirection()
+                    p = simulatedState.getAgentPosition(self.index)
+                    pp = test.getParent().getGameState().getAgentPosition(self.index)
+                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
+                    print self.index, p, a, s, pp, "value", v, iteration
+                elif evalFunc == "offensive":
+                    features = self.offensiveFeature(simulatedState)
+                    test = curr
+                    while test.getParent() != root:
+                        test = test.getParent()
+                    a = test.getGameState().getAgentState(self.index).getDirection()
+                    p = simulatedState.getAgentPosition(self.index)
+                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
+                    print features, p, a, "value", v
+            
             self.backprop(curr, stateValue)
             iteration -= 1
         
