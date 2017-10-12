@@ -26,10 +26,10 @@ from MCT import MCT
 from math import log, sqrt
 from capture import AgentRules
 
-WEIGHTS = {"score": 1000, "myFood": 2, "opponentFood": -5, "numInvaders": -10,
-           "death": -500, "distanceToFood": -10, "isPacman": 20, "carry": 100,
+WEIGHTS = {"score": 1000, "myFood": 5, "opponentFood": -5, "numInvaders": -10,
+           "death": -300, "distanceToFood": -10, "isPacman": 20, "carry": 100,
            "isGhost": 5, "invaderDistance": -10, "homeDist": -10}
-debug = False
+DEBUG = False
 featuresTool = featuresTool.featuresTool()
 
 #################
@@ -100,8 +100,6 @@ class DummyAgent(CaptureAgent):
         self.steps = 3
         featuresTool.initGame(self,gameState)
 #        featuresTool.update(self, gameState, gameState)
-        if debug:
-            featuresTool.DRAW = True
         '''
         Your initialization code goes here, if you need any.
         '''
@@ -130,7 +128,7 @@ class DummyAgent(CaptureAgent):
         rootNode = self.MCTS(gameState.deepCopy(), 25, evalFunc)
         children = rootNode.getChild()
         
-        if debug:
+        if DEBUG:
             for child in children:
                 v = child.getTotalValue() / child.getVisits()
                 print v, child.getVisits(), child.getGameState().getAgentState(self.index).getDirection()
@@ -141,7 +139,7 @@ class DummyAgent(CaptureAgent):
         
         featuresTool.update(self, gameState, gameState.generateSuccessor(self.index, action))
         
-        if debug:
+        if DEBUG:
             self.debugClear()
             self.debugDraw(self.p, [0,1,1])
             util.pause()
@@ -258,9 +256,9 @@ class DummyAgent(CaptureAgent):
                         myPos = state.getAgentPosition(self.index)
                         # find the action that moves closest to our agent position
                         minAct = min(opLegalAction, key = lambda x: self.getMazeDistance(myPos, Actions.getSuccessor(opPos, x)))
-#                        print myPos, opPos, minAct, "iteration", iteration
                         opState = state.deepCopy()
                         AgentRules.applyAction(opState, minAct, op)
+                        AgentRules.checkDeath(opState, op)
                     else:
                         # else opponent choose action by minisizing our value
                         minScore = float("inf")
@@ -269,6 +267,7 @@ class DummyAgent(CaptureAgent):
                         for a in opLegalAction:
                             tempState = state.deepCopy()
                             AgentRules.applyAction(tempState, a, op)
+                            AgentRules.checkDeath(tempState, op)
                             tempScore = self.evaluateSimulation(tempState, state, evalFunc, 0)
                             if tempScore < minScore:
                                 minScore = tempScore
@@ -304,7 +303,7 @@ class DummyAgent(CaptureAgent):
             stateValue = max(values)
             """
             # debug tools
-            if debug:
+            if DEBUG:
                 test = curr
                 while test.getParent() != root:
                     test = test.getParent()
@@ -329,7 +328,14 @@ class DummyAgent(CaptureAgent):
                     p = simulatedState.getAgentPosition(self.index)
                     pp = test.getParent().getGameState().getAgentPosition(self.index)
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
-                    print self.index, p, a, s, pp, "value", v
+                    print self.index, p, a, s, pp, "value", v, evalFunc
+                else:
+                    features = self.defensiveFeature(simulatedState, gameState)
+                    s = str(features["invaderDistance"])
+                    a = test.getGameState().getAgentState(self.index).getDirection()
+                    p = simulatedState.getAgentPosition(self.index)
+                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth())
+                    print evalFunc, p, a, s, v
             self.backprop(curr, stateValue)
             iteration -= 1
         
@@ -364,6 +370,7 @@ class DummyAgent(CaptureAgent):
                 opActions.append(opLegalAction)
             for actions, op in zip(opActions, opponents):
                 AgentRules.applyAction(fakeState, random.choice(actions), op)
+                AgentRules.checkDeath(fakeState, op)
 
             step -= 1
         
@@ -386,7 +393,7 @@ class DummyAgent(CaptureAgent):
     
     def backprop(self, node, value):
         # backpropagation step
-        gamma = 1
+        gamma = 0.9
         if node is not None:
             node.visit()
             node.updateValue(value * gamma)
@@ -412,10 +419,6 @@ class DummyAgent(CaptureAgent):
         features["score"] = self.getScore(gameState) - self.getScore(originalState)
         features["myFood"] = len(self.getFoodYouAreDefending(gameState).asList())
         features["carry"] = gameState.getAgentState(self.index).numCarrying - originalState.getAgentState(self.index).numCarrying
-        
-        enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-        features["numInvaders"] = len(invaders)
         
         originalPosition = originalState.getAgentState(self.index).getPosition()
         simulatePosition = gameState.getAgentState(self.index).getPosition()

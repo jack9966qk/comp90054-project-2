@@ -6,23 +6,20 @@ dir = "teams/{}/".format(teamName)
 sys.path.append(dir)
 import moreUtil
 import util
+import copy
 
 
-DRAW = False
 ESCAPE_DIST = 4
-FileName = "Fdict.json"
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
-modelName = dir +"modle.pickle"
 SIGHT_RANGE = 6
 SCARED_TIME = 40
-MODS_FILENAME = 'ModDict.json'
+DRAW = False
 
 class featuresTool():
     
     def __init__(self,dict=None):
         self.dict = dict
         self.lastState = None        
-        
             
     def initGame(self,agent,gameState):
         #if not agent.index == agent.getTeam(gameState)[0]: return
@@ -76,7 +73,7 @@ class featuresTool():
                         
             
         for i in opp:
-            tempP = self.probMap[i]
+            tempP = copy.copy(self.probMap[i])
             for pos in self.probMap[i]:
                 trueD = util.manhattanDistance(selfpos,pos)
                 prob1 = gameState.getDistanceProb(trueD,noisyDist[i])
@@ -86,16 +83,18 @@ class featuresTool():
                 if prob == 0:
                     while pos in tempP:
                         tempP.remove(pos)
-            self.probMap[i] = tempP
+            if len(tempP) != 0:
+                self.probMap[i] = tempP
             
-            tempP = self.probMap[i]
+            tempP = copy.copy(self.probMap[i])
             for pos in self.probMap[i]:
                 obs = util.manhattanDistance(pos,selfpos) < SIGHT_RANGE
                 poso = gameState.getAgentPosition(i)
                 if obs and poso == None:
                     while pos in tempP:
                         tempP.remove(pos)
-            self.probMap[i] = tempP
+            if len(tempP) != 0:
+                self.probMap[i] = tempP
             
             #if len(tempP) == 0:
             if self.checkkill(agent,lastState,gameState,i):
