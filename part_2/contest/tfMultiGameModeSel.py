@@ -1,5 +1,4 @@
-# from tfModeSelTeam import loadModelIfExists, saveModel, newTfAgent, TEAM_NAME
-from tfSimpleTeam import loadModelIfExists, saveModel, newTfAgent, TEAM_NAME
+from tfModeSelTeam import loadModelIfExists, saveModel, newTfAgent, TEAM_NAME
 import tfShared
 from capture import readCommand, runGames
 import os
@@ -28,7 +27,7 @@ logWriter.writerow(["finishedGames", "avg score last 100", "wins of last 100", "
 # main loop
 for i in xrange(5):
     # run games
-    cmdString = "-r {} -l layouts/trivialCapture.lay -Q --redOpts=useShared=True,mode=Train -n 100".format(TEAM_NAME).split()
+    cmdString = "-r {} -l layouts/superTinyCapture.lay -Q --redOpts=useShared=True,mode=Train -n 100".format(TEAM_NAME).split()
     options = readCommand(cmdString)
     runGames(**options)
 

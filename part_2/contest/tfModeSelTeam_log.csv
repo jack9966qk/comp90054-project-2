@@ -1,1 +1,6 @@
 finishedGames,avg score last 100,wins of last 100,loses of last 100,actionFreq
+100,0.0,0,0,"defaultdict(<type 'int'>, {'backhome': 29980, 'North': 300, 'West': 9222, 'Stop': 40309, 'defense': 20, 'offense': 30000, 'East': 10169})"
+200,0.0,0,0,"defaultdict(<type 'int'>, {'backhome': 59980, 'North': 300, 'West': 27660, 'Stop': 62884, 'defense': 30020, 'offense': 30000, 'East': 29156})"
+300,0.0,0,0,"defaultdict(<type 'int'>, {'backhome': 119980, 'North': 300, 'West': 46186, 'Stop': 85320, 'defense': 30020, 'offense': 30000, 'East': 48194})"
+400,0.0,0,0,"defaultdict(<type 'int'>, {'backhome': 149980, 'North': 600, 'West': 55768, 'Stop': 124905, 'defense': 31678, 'offense': 58342, 'East': 58727})"
+500,0.0,0,0,"defaultdict(<type 'int'>, {'backhome': 195088, 'North': 600, 'West': 74297, 'Stop': 147330, 'defense': 46570, 'offense': 58342, 'East': 77773})"

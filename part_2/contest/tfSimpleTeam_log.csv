@@ -1,0 +1,6 @@
+finishedGames,avg score last 100,wins of last 100,loses of last 100,actionFreq
+100,0.0,0,0,"defaultdict(<type 'int'>, {'North': 60000})"
+200,0.0,0,0,"defaultdict(<type 'int'>, {'North': 90000, 'South': 30000})"
+300,0.0,0,0,"defaultdict(<type 'int'>, {'East': 30000, 'North': 120000, 'South': 30000})"
+400,0.0,0,0,"defaultdict(<type 'int'>, {'East': 60000, 'North': 150000, 'South': 30000})"
+500,0.0,0,0,"defaultdict(<type 'int'>, {'East': 90000, 'North': 180000, 'South': 30000})"

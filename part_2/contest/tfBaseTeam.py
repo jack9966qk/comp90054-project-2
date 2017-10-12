@@ -67,9 +67,11 @@ def newTfAgent():
     return agent
 
 def loadModelIfExists(agent, teamName=TEAM_NAME):
-    if os.path.exists("{}/model.cpkt".format(teamName)):
+    modelFileName = "{}/model.cpkt".format(teamName)
+    if os.path.exists(modelFileName):
+        print("loading {}".format(modelFileName))
         agent.model.saver.restore(agent.model.session, "{}}/model.cpkt".format(teamName))
-    print("LOADED AGENT MODEL FROM FILE")
+        print("LOADED AGENT MODEL FROM FILE")
 
 def saveModel(agent, teamName=TEAM_NAME):
     return agent.model.saver.save(agent.model.session,
@@ -169,7 +171,7 @@ class TensorForceAgent(CaptureAgent):
             self.debugDraw([(x+1, y)], [0, 0, 1])
         
         # avoid illegal moves
-        action = tfAction if tfAction in gameState.getLegalActions() else "Stop"
+        action = tfAction if tfAction in gameState.getLegalActions(self.index) else "Stop"
 
         # record choosed action to global var
         tfShared.ACTION_NUMS.append(tfAction)
@@ -178,7 +180,7 @@ class TensorForceAgent(CaptureAgent):
         self.prevScore = self.getScore(gameState)
         self.prevAction = action
         self.prevState = gameState
-        self.prevIsIllegal = not tfAction in gameState.getLegalActions()
+        self.prevIsIllegal = not tfAction in gameState.getLegalActions(self.index)
 
         return action
 
