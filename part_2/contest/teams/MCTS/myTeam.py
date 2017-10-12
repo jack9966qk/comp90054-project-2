@@ -137,6 +137,7 @@ class DummyAgent(CaptureAgent):
         action = choice.getGameState().getAgentState(self.index).getDirection()
         
         prevState = self.getPreviousObservation()
+        if prevState == None: prevState = gameState
         featuresTool.update(self, prevState, gameState)
         
         if debug:
