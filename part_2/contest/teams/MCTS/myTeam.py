@@ -96,7 +96,7 @@ class MonteCarloAgent(CaptureAgent):
 
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
-        self.middle = self.size[0]/2 if self.red else self.size[0]/2 + 1
+        self.middle = self.size[0]/2 if self.red else self.size[0]/2 - 1
         self.steps = 3
         self.lastEvalFunc = "offensive"
         mapTool.initGame(self,gameState)
@@ -306,7 +306,7 @@ class MonteCarloAgent(CaptureAgent):
             self.p.append(simulatedState.getAgentPosition(self.index))
             """
             states = [self.simulate(curr.getGameState()) for i in range(2)]
-            values = [self.evaluateSimulation(s, gameState, evalFunc, curr.getDepth()) for s in states]
+            values = [self.evaluateSimulation(s, gameState, evalFunc, curr.getDepth(), action) for s in states]
             stateValue = max(values)
             """
             

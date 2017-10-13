@@ -26,13 +26,12 @@ class featuresTool():
         self.walls = gameState.getWalls()
         self.size = (self.walls.width,self.walls.height)
         self.allpos = [(i,j) for i in range(self.size[0]) for j in range(self.size[1]) if not self.walls[i][j]]
-        #self.probMap = [self.iniProbMap() for i in range(gameState.getNumAgents())]
         self.probMap = [[gameState.getInitialAgentPosition(i)] for i in range(gameState.getNumAgents())]
-        self.start = gameState.getAgentPosition(agent.index)[0]
-        self.middle = (self.size[0]/2) - (self.start%2)
         self.team = agent.getTeam(gameState)
         self.mate = [i for i in self.team if not i ==agent.index]
         self.opp = agent.getOpponents(gameState)
+        self.start = gameState.getInitialAgentPosition(self.opp[0])[0]
+        self.middle = (self.size[0]/2)
         self.teamNum = gameState.getNumAgents()
         self.lastidx = 0
         self.lastpos = None
@@ -41,8 +40,6 @@ class featuresTool():
         self.lastoppfoods = agent.getFoodYouAreDefending(gameState).asList()
         self.lastCapsules = len(agent.getCapsules(gameState))
         self.scareTimeLeft = 0
-        #print self.allpos
-        #print self.lastoppfoods
         return 
 
     
@@ -114,16 +111,16 @@ class featuresTool():
         
         for i in self.opp:
             tempP = copy.copy(self.probMap[i])
-            state = gameState.getAgentState(i).isPacman
+            truePacman = gameState.getAgentState(i).isPacman
             for pos in self.probMap[i]:
-                if abs(pos[0]-self.start) < 15:
-                    oppstate = False
-                else:
-                    oppstate = True
-                if (oppstate == state):
+                
+                probPacman = not abs(pos[0]-self.start) < self.middle-1
+                
+                if (probPacman != truePacman):
                     tempP.remove(pos)
-        if len(tempP) != 0:
-            self.probMap[i] = tempP
+            
+            if len(tempP) != 0:
+                self.probMap[i] = tempP
         
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
