@@ -28,15 +28,11 @@ This is an variation of the previous attempt, where weights are predefined inste
 
 ### MCTS
 
-As another attempt to handle the large, unknown state space, Monte Carlo tree search was implemented. The algorithm is mostly the same as discussed earlier in this subject, where UCB1 was applied to balance between exploration and exploitation.
-
-> stop early instead using feature * weights (?)
+As another attempt to handle the large, unknown state space, Monte Carlo tree search was implemented. After determining a mode, Monte Carlo tree search is performed, with UCB1 applied to balance between exploration and exploitation. The algorithm is mostly the same as discussed earlier in this subject, except that instead of running simulation until a terminal state, it terminates when a certain depth is reached, with value of the state approximated as the product of features and weights.
 
 ### Others
 
-Many other approaches were attempted, including but not limited to
-
-> Deep Q-learning (CNN with matrix input or dense layers with features as input, learning actions or modes), value approximation etc.
+Many other approaches were attempted, including but not limited to using machine learning regression to approximate values through features, deep Q-learning using CNN with 2D matrix input or dense layers with features as input
 
 ## Results
 
