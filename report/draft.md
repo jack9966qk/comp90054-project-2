@@ -32,7 +32,7 @@ As another attempt to handle the large, unknown state space, Monte Carlo tree se
 
 ### Others
 
-Many other approaches were attempted, including but not limited to using machine learning regression to approximate values through features, deep Q-learning using CNN with 2D matrix input or dense layers with features as input
+Many other approaches were attempted, including but not limited to using machine learning regression to approximate values through features, deep Q-learning using CNN with 2D matrix input or dense layers with features as input.
 
 ## Results
 
@@ -40,8 +40,11 @@ Many other approaches were attempted, including but not limited to using machine
 
 [Table of tournament results for some agents]
 
-Pure reinforcement learning does not produce good results overall, although the agent learns to chase invaders and eating food from opponents, it is not able to escape from ghosts and return to the home area.
+Pure reinforcement learning does not produce good results overall, although the agent learns to chase invaders and eating food from opponents, it is not able to escape from ghosts and return to the home area. A single set of weights could be too simple for the game mechanics, where agents may have different priorities and strategies in different scenarios. For example, the agent is unable to recognise the long term goal of returning captured food.
 
-Introducing mode selection does appear to improve the performance. With reinforcement learning, weights trained for defense and offense modes are effective, while weights for "back to home" mode remains unhelpful. The problem is overcomed by predefining the weights, which indicates...
+Introducing mode selection does appear to improve the performance. With reinforcement learning, weights trained for defense and offense modes are effective, while the "back to home" mode remains unhelpful. With predefined weights, however, the agent performs well in all modes, which is able to beat the baseline team easily, and get a relatively high rank on the tournament. It indicates that the idea of mode selection and value approximation through features are indeed helpful, and could be applied to other approaches, while the learning process requires improvement.
 
-Learning weights for each mode is more effective because...
+More sophisticated learning algorithms such as Deep Q-learning are therefore experimented. However, they were not able to produce successful agents, possibly due to the lack of training data or experience.
+
+Combining the ideas above with Monte Carlo search algorithm leads to better results, which is expected because rather than the greedy approaches above, it simulates subsequent game states and anticipates risks such as dead ends...
+
