@@ -26,8 +26,8 @@ from MCT import MCT
 from math import log, sqrt
 from capture import AgentRules
 
-WEIGHTS = {"score": 1000, "myFood": 30, "opponentFood": -5, "numInvaders": -10,
-           "death": -500, "distanceToFood": -10, "isPacman": 20, "carry": 100,
+WEIGHTS = {"score": 1000, "myFood": 30, "opponentFood": -5, "eatCapsule": 200,
+           "death": -800, "distanceToFood": -5, "isPacman": 20, "carry": 100,
            "isGhost": 50, "invaderDistance": -50, "homeDist": -10, "reverse": -50}
 DEBUG = False
 mapTool = featuresTool.featuresTool()
@@ -99,6 +99,7 @@ class MonteCarloAgent(CaptureAgent):
         self.middle = self.size[0]/2 if self.red else self.size[0]/2 - 1
         self.steps = 3
         self.lastEvalFunc = "offensive"
+        self.oppoScared = 0
         mapTool.initGame(self,gameState)
 #        featuresTool.update(self, gameState, gameState)
         
@@ -107,28 +108,47 @@ class MonteCarloAgent(CaptureAgent):
         
         # Pick Action
         oppoState = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
-        opponentsPos = [gameState.getAgentPosition(i) for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
         myPos = gameState.getAgentState(self.index).getPosition()
+        opponentsPos = [gameState.getAgentPosition(i) for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
+        distances = [self.getMazeDistance(myPos, food) for food in self.getFood(gameState).asList()]
+        minDist = min(distances) if len(distances) != 0 else 0
+        team = self.getTeam(gameState)
+        
         agentState = gameState.getAgentState(self.index)
+        
         enemySimulation = False
-        self.invaderNum = len([s for s in oppoState if s.isPacman])
-        invaderDist = self.defensiveFeature(gameState)["invaderDistance"]
         for pos in opponentsPos:
             if self.getMazeDistance(myPos, pos) <= 5:
                 enemySimulation = True
         
+        self.invaderNum = len([s for s in oppoState if s.isPacman])
+        invaderDist = self.defensiveFeature(gameState)["invaderDistance"]
+        
+        prevState = self.getPreviousObservation()
+        if self.oppoScared > 0:
+            self.oppoScared -= 1
+        if prevState != None and len(self.getCapsules(prevState)) > len(self.getCapsules(gameState)):
+            # if capsule eaten, keep a timer
+            self.oppoScared = 40
+        
         evalFunc = "offensive"
         
-        if agentState.numCarrying >= 3:
+        if agentState.numCarrying >= 10 or len(self.getFood(gameState).asList()) < 3:
             evalFunc = "backHome"
-        elif oppoState[0].isPacman or oppoState[1].isPacman:
-            if agentState.numCarrying > 0:
-                evalFunc = "backHome"
+        elif self.oppoScared > 0:
+            if self.oppoScared > self.homeDistance(gameState) / 3:
+                evalFunc = "offensive"
             else:
-                if invaderDist > agentState.scaredTimer:
-                    evalFunc = "defensive"
+                evalFunc = "backHome"
+        elif oppoState[0].isPacman or oppoState[1].isPacman:
+            if (oppoState[0].isPacman and self.index == team[0]) or (oppoState[1].isPacman and self.index == team[1]):
+                if agentState.numCarrying > 0:
+                    evalFunc = "backHome"
                 else:
-                    evalFunc = "realTime" if enemySimulation else "offensive"
+                    if invaderDist < agentState.scaredTimer and minDist < agentState.scaredTimer:
+                        evalFunc = "realTime" if enemySimulation else "offensive"
+                    else:
+                        evalFunc = "defensive"
         elif enemySimulation:
             evalFunc = "realTime"
         
@@ -316,49 +336,9 @@ class MonteCarloAgent(CaptureAgent):
                 n = n.getParent()
             action = n.getGameState().getAgentState(self.index).getDirection()
             
-            simulatedState = self.simulate(curr.getGameState())           
-            stateValue = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-            self.p.append(simulatedState.getAgentPosition(self.index))
-            """
             states = [self.simulate(curr.getGameState()) for i in range(2)]
             values = [self.evaluateSimulation(s, gameState, evalFunc, curr.getDepth(), action) for s in states]
             stateValue = max(values)
-            """
-            
-            # debug tools
-            if DEBUG:
-                test = curr
-                while test.getParent() != root:
-                    test = test.getParent()
-                if evalFunc == "realTime":
-                    features = self.realTimeFeature(simulatedState, gameState, curr.getDepth())
-                    s = "die" if features["death"] else "live"
-                    a = test.getGameState().getAgentState(self.index).getDirection()
-                    p = simulatedState.getAgentPosition(self.index)
-                    pp = test.getParent().getGameState().getAgentPosition(self.index)
-                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-                    print self.index, p, a, s, pp, "value", v
-                elif evalFunc == "offensive":
-                    features = self.offensiveFeature(simulatedState, gameState, action)
-                    a = test.getGameState().getAgentState(self.index).getDirection()
-                    p = simulatedState.getAgentPosition(self.index)
-                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-                    print features, p, a, "value", v
-                elif evalFunc == "backHome":
-                    features = self.backHomeFeature(simulatedState, gameState, curr.getDepth())
-                    s = "die" if features["death"] else "live"
-                    a = test.getGameState().getAgentState(self.index).getDirection()
-                    p = simulatedState.getAgentPosition(self.index)
-                    pp = test.getParent().getGameState().getAgentPosition(self.index)
-                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-                    print self.index, p, a, s, pp, "value", v, evalFunc
-                else:
-                    features = self.defensiveFeature(simulatedState)
-                    s = str(features["invaderDistance"])
-                    a = test.getGameState().getAgentState(self.index).getDirection()
-                    p = simulatedState.getAgentPosition(self.index)
-                    v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-                    print self.index, evalFunc, p, a, s, v
             
             self.backprop(curr, stateValue)
             iteration -= 1
@@ -425,10 +405,11 @@ class MonteCarloAgent(CaptureAgent):
     
     def evaluateSimulation(self, gameState, originalState, evalFunc, depth, action):
         # evaluate utility for simulated state
+        
         if evalFunc == "realTime":
             features = self.realTimeFeature(gameState, originalState, depth)
         elif evalFunc == "offensive":
-            features = self.offensiveFeature(gameState, originalState, action)
+            features = self.offensiveFeature(gameState, originalState, action, depth)
         elif evalFunc == "defensive":
             features = self.defensiveFeature(gameState)
         elif evalFunc == "backHome":
@@ -436,12 +417,56 @@ class MonteCarloAgent(CaptureAgent):
         weights = WEIGHTS
         return features * weights
     
+    
+    def backHomeFeature(self, gameState, originalState, depth):
+        
+        features = util.Counter()
+        originalPosition = originalState.getAgentState(self.index).getPosition()
+        simulatePosition = gameState.getAgentState(self.index).getPosition()
+        features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
+        
+        features["score"] = self.getScore(gameState) - self.getScore(originalState)
+        
+        features["homeDist"] = self.homeDistance(gameState)
+        
+        return features
+    
+    def offensiveFeature(self, gameState, originalState, action, depth):
+        
+        # features that decide where to move
+        features = util.Counter()
+        
+        originalPosition = originalState.getAgentState(self.index).getPosition()
+        simulatePosition = gameState.getAgentState(self.index).getPosition()
+        agentState = originalState.getAgentState(self.index)
+        if not agentState.isPacman and abs(originalPosition[0]-self.middle) > 1 and agentState.scaredTimer == 0:
+            # if agent is ghost and not close enough to mid lane
+            # do not penalize for death
+            features["death"] = 0
+        else:
+            features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
+        
+        originalDirection = originalState.getAgentState(self.index).getDirection()
+        reverse = Directions.REVERSE[originalDirection]
+        features["reverse"] = (self.lastEvalFunc == "offensive") and (action == reverse)
+        
+        myPos = gameState.getAgentState(self.index).getPosition()
+        distances = [self.getMazeDistance(myPos, food) for food in self.getFood(gameState).asList()]
+        features["distanceToFood"] = min(distances) if len(distances) != 0 else 0
+        features["opponentFood"] = len(self.getFood(gameState).asList())
+        features["carry"] = gameState.getAgentState(self.index).numCarrying
+        
+        features["eatCapsule"] = self.getCapsules(originalState) > self.getCapsules(gameState)
+        
+        features["isPacman"] = 1 if gameState.getAgentState(self.index).isPacman else 0
+        
+        return features
+    
     def realTimeFeature(self, gameState, originalState, depth):
         
         # features that represent a simulated game state
         features = util.Counter()
         features["score"] = self.getScore(gameState) - self.getScore(originalState)
-        features["myFood"] = len(self.getFoodYouAreDefending(gameState).asList())
         features["carry"] = gameState.getAgentState(self.index).numCarrying - originalState.getAgentState(self.index).numCarrying
         
         originalPosition = originalState.getAgentState(self.index).getPosition()
@@ -454,50 +479,6 @@ class MonteCarloAgent(CaptureAgent):
         else:
             features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
 
-        
-        return features
-    
-    def backHomeFeature(self, gameState, originalState, depth):
-        
-        features = util.Counter()
-        originalPosition = originalState.getAgentState(self.index).getPosition()
-        simulatePosition = gameState.getAgentState(self.index).getPosition()
-        features["death"] = self.getMazeDistance(originalPosition, simulatePosition) > (self.steps + depth + 1)
-        
-        features["score"] = self.getScore(gameState) - self.getScore(originalState)
-        
-        if not gameState.getAgentState(self.index).isPacman:
-            features["homeDist"] = 0
-        else:
-            minDist = 9999
-            myPos = gameState.getAgentPosition(self.index)
-            walls = self.walls.asList()
-            for i in range(self.size[1]):
-                tempPos = (self.middle, i)
-                if not tempPos in walls:
-                    tempDist = self.getMazeDistance(myPos, tempPos)
-                    minDist = min(minDist, tempDist)
-            features["homeDist"] = minDist
-        
-        return features
-    
-    def offensiveFeature(self, gameState, originalState, action):
-        
-        # features that decide where to move
-        features = util.Counter()
-        
-        originalDirection = originalState.getAgentState(self.index).getDirection()
-        reverse = Directions.REVERSE[originalDirection]
-        features["reverse"] = (self.lastEvalFunc == "offensive") and (action == reverse)
-        
-        myPos = gameState.getAgentState(self.index).getPosition()
-        distances = [self.getMazeDistance(myPos, food) for food in self.getFood(gameState).asList()]
-        features["distanceToFood"] = min(distances) if len(distances) != 0 else 0
-        features["opponentFood"] = len(self.getFood(gameState).asList())
-        features["carry"] = gameState.getAgentState(self.index).numCarrying
-        
-        features["isPacman"] = 1 if gameState.getAgentState(self.index).isPacman else 0
-        
         return features
     
     def defensiveFeature(self, gameState):
@@ -531,7 +512,22 @@ class MonteCarloAgent(CaptureAgent):
         
         return features
     
+    def homeDistance(self, gameState):
         
+        if not gameState.getAgentState(self.index).isPacman:
+            d = 0
+        else:
+            minDist = 9999
+            myPos = gameState.getAgentPosition(self.index)
+            walls = self.walls.asList()
+            for i in range(self.size[1]):
+                tempPos = (self.middle, i)
+                if not tempPos in walls:
+                    tempDist = self.getMazeDistance(myPos, tempPos)
+                    minDist = min(minDist, tempDist)
+            d = minDist
+        
+        return d
 
     def final(self, gameState):
         CaptureAgent.final(self, gameState)
