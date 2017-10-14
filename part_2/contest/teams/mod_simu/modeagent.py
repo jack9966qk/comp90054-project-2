@@ -11,7 +11,6 @@ def offence_mode(tool,agent,gameState):
     action,temp =utils.eatFoodSimu(tool,agent,gameState,gameState.getLegalActions(agent.index),[tpos]+tool.expand(obsarea))
     if temp == 99999:
         action,temp = utils.eatFoodSimu(tool,agent,gameState,gameState.getLegalActions(agent.index),[])
-    print (action,temp)
     if action == None:
         action = "Stop"
     return action
@@ -31,7 +30,7 @@ def defence_mode(tool,agent,gameState):
     obsarea = utils.obspos(tool,agent,gameState)
     obsarea = tool.expand(obsarea)
     if gameState.getAgentState(agent.index).isPacman:
-        action,temp =utils.backHomeSimu(tool,agent,gameState,gameState.getLegalActions(agent.index),obsarea)
+        action,temp =utils.backHomeSimu(tool,agent,gameState,gameState.getLegalActions(agent.index),[])
     else:
         action,temp =utils.killInvaderSimu(tool,agent,gameState,gameState.getLegalActions(agent.index),[tpos]+mwalls)
     if temp == 99999:

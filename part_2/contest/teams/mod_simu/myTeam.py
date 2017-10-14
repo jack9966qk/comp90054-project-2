@@ -27,7 +27,7 @@ import modeagent
 import utils
 
 tool = tool.tool()
-PRINTF = True
+PRINTF = False
 
 
 #################
@@ -126,7 +126,7 @@ class DummyAgent(CaptureAgent):
             print 
             
         
-        util.pause()
+        #util.pause()
         return action
     
 

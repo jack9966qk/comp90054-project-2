@@ -7,7 +7,7 @@ import util
 import copy
 
 
-DRAW = False
+DRAW = True
 ESCAPE_DIST = 4
 dirs = [(0,1),(0,-1),(1,0),(-1,0),(0,0)]
 SIGHT_RANGE = 6
@@ -49,14 +49,17 @@ class tool():
         idx = agent.index
         if not lidx == None:
         # expand, one move
-            while not (idx - 1+teamNum)%teamNum in team:
-                
-                idx = (idx - 1+teamNum)%teamNum
-                poso = gameState.getAgentPosition(idx)
+            #while not (idx - 1+teamNum)%teamNum in team:
+            while not lidx==idx:
+                if lidx in self.team:
+                    lidx = (lidx + 1+teamNum)%teamNum
+                    continue
+                poso = gameState.getAgentPosition(lidx)
                 if not poso == None:
-                    self.probMap[idx]=[poso]
+                    self.probMap[lidx]=[poso]
                 else:
-                    self.probMap[idx]=self.expand(self.probMap[idx])
+                    self.probMap[lidx]=self.expand(self.probMap[lidx])
+                lidx = (lidx + 1+teamNum)%teamNum
                         
             
         for i in opp:
@@ -104,12 +107,9 @@ class tool():
             tempP = self.probMap[i]
             state = gameState.getAgentState(i).isPacman
             for pos in self.probMap[i]:
-                if abs(pos[0]-self.start)<=15:
-                    oppstate = False
-                else:
-                    oppstate = True
-                if (oppstate == state):
+                if not (self.athome(pos) == state):
                     self.probMap[i].remove(pos)
+                    
         
         for i in team:
             self.probMap[i] = [gameState.getAgentPosition(i)]
@@ -167,6 +167,6 @@ class tool():
         return False
     
     def athome(self,pos):
-        if abs(pos[0]-self.start)<15:
+        if abs(pos[0]-self.start)<(self.size[0]/2-1):
             return True
         return False
