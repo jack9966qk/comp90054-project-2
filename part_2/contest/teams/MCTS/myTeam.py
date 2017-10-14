@@ -26,9 +26,9 @@ from MCT import MCT
 from math import log, sqrt
 from capture import AgentRules
 
-WEIGHTS = {"score": 1000, "myFood": 5, "opponentFood": -5, "numInvaders": -10,
-           "death": -300, "distanceToFood": -10, "isPacman": 20, "carry": 100,
-           "isGhost": 5, "invaderDistance": -10, "homeDist": -10, "reverse": -50}
+WEIGHTS = {"score": 1000, "myFood": 30, "opponentFood": -5, "numInvaders": -10,
+           "death": -500, "distanceToFood": -10, "isPacman": 20, "carry": 100,
+           "isGhost": 50, "invaderDistance": -50, "homeDist": -10, "reverse": -50}
 DEBUG = False
 mapTool = featuresTool.featuresTool()
 
@@ -109,20 +109,26 @@ class MonteCarloAgent(CaptureAgent):
         oppoState = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
         opponentsPos = [gameState.getAgentPosition(i) for i in self.getOpponents(gameState) if gameState.getAgentPosition(i) != None]
         myPos = gameState.getAgentState(self.index).getPosition()
+        agentState = gameState.getAgentState(self.index)
         enemySimulation = False
+        self.invaderNum = len([s for s in oppoState if s.isPacman])
+        invaderDist = self.defensiveFeature(gameState)["invaderDistance"]
         for pos in opponentsPos:
             if self.getMazeDistance(myPos, pos) <= 5:
                 enemySimulation = True
         
-        agentState = gameState.getAgentState(self.index)
         evalFunc = "offensive"
+        
         if agentState.numCarrying >= 3:
             evalFunc = "backHome"
         elif oppoState[0].isPacman or oppoState[1].isPacman:
-            if agentState.numCarrying == 0:
-                evalFunc = "defensive"
-            else:
+            if agentState.numCarrying > 0:
                 evalFunc = "backHome"
+            else:
+                if invaderDist > agentState.scaredTimer:
+                    evalFunc = "defensive"
+                else:
+                    evalFunc = "realTime" if enemySimulation else "offensive"
         elif enemySimulation:
             evalFunc = "realTime"
         
@@ -262,6 +268,15 @@ class MonteCarloAgent(CaptureAgent):
                         opState = state.deepCopy()
                         AgentRules.applyAction(opState, minAct, op)
                         AgentRules.checkDeath(opState, op)
+                    elif not state.getAgentState(self.index).isPacman and state.getAgentState(op).isPacman:
+                        # if agent is ghost and opponent is pacman
+                        # simulate chasing
+                        opPos = state.getAgentPosition(op)
+                        myPos = state.getAgentPosition(self.index)
+                        maxAct = max(opLegalAction, key = lambda x: self.getMazeDistance(myPos, Actions.getSuccessor(opPos, x)))
+                        opState = state.deepCopy()
+                        AgentRules.applyAction(opState, maxAct, op)
+                        AgentRules.checkDeath(opState, op)
                     else:
                         # else opponent choose action by minisizing our value
                         minScore = float("inf")
@@ -338,12 +353,12 @@ class MonteCarloAgent(CaptureAgent):
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
                     print self.index, p, a, s, pp, "value", v, evalFunc
                 else:
-                    features = self.defensiveFeature(simulatedState, gameState)
+                    features = self.defensiveFeature(simulatedState)
                     s = str(features["invaderDistance"])
                     a = test.getGameState().getAgentState(self.index).getDirection()
                     p = simulatedState.getAgentPosition(self.index)
                     v = self.evaluateSimulation(simulatedState, gameState, evalFunc, curr.getDepth(), action)
-                    print evalFunc, p, a, s, v
+                    print self.index, evalFunc, p, a, s, v
             
             self.backprop(curr, stateValue)
             iteration -= 1
@@ -415,7 +430,7 @@ class MonteCarloAgent(CaptureAgent):
         elif evalFunc == "offensive":
             features = self.offensiveFeature(gameState, originalState, action)
         elif evalFunc == "defensive":
-            features = self.defensiveFeature(gameState, originalState)
+            features = self.defensiveFeature(gameState)
         elif evalFunc == "backHome":
             features = self.backHomeFeature(gameState, originalState, depth)
         weights = WEIGHTS
@@ -431,7 +446,8 @@ class MonteCarloAgent(CaptureAgent):
         
         originalPosition = originalState.getAgentState(self.index).getPosition()
         simulatePosition = gameState.getAgentState(self.index).getPosition()
-        if not originalState.getAgentState(self.index).isPacman and abs(originalPosition[0]-self.middle) > 1:
+        agentState = originalState.getAgentState(self.index)
+        if not agentState.isPacman and abs(originalPosition[0]-self.middle) > 1 and agentState.scaredTimer == 0:
             # if agent is ghost and not close enough to mid lane
             # do not penalize for death
             features["death"] = 0
@@ -484,17 +500,21 @@ class MonteCarloAgent(CaptureAgent):
         
         return features
     
-    def defensiveFeature(self, gameState, originalState):
+    def defensiveFeature(self, gameState):
         
         # features for defense
         features = util.Counter()
+        
         opponents = self.getOpponents(gameState)
         oppoStates = [gameState.getAgentState(i) for i in opponents]
+        simulateInvaderNum = len([s for s in oppoStates if s.isPacman])
         myPos = gameState.getAgentState(self.index).getPosition()
         probMap = mapTool.probMap
         team = self.getTeam(gameState)
 
         if not oppoStates[0].isPacman and not oppoStates[1].isPacman:
+            features["invaderDistance"] = -5
+        elif self.invaderNum == 2 and simulateInvaderNum == 1:
             features["invaderDistance"] = 0
         else:
             if oppoStates[0].isPacman and oppoStates[1].isPacman:
