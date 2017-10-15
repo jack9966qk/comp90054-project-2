@@ -34,6 +34,15 @@ Many other approaches were attempted, including but not limited to using machine
 
 [Table of tournament results for some agents]
 
+Ranking of agents |
+-----------------|
+`staff_team_top` |
+MCTS |
+Modes with predefined weights |
+`staff_team_medium`|
+`staff_team_basic`|
+
+
 Pure reinforcement learning does not produce good results overall, although the agent learns to chase invaders and eating food from opponents, it is not able to escape from ghosts and return to the home area. A single set of weights could be too simple for the game mechanics, where agents may have different priorities and strategies in different scenarios. For example, the agent is unable to recognise the long term goal of returning captured food.
 
 Introducing mode selection does appear to improve the performance. With reinforcement learning, weights trained for defense and offense modes are effective, while the "back to home" mode remains unhelpful. The agent sometimes moves between two positions near the border without crossing it, which may indicate some bugs in feature extraction or the reward function.
@@ -44,3 +53,4 @@ More sophisticated learning algorithms such as Deep Q-learning are therefore exp
 
 Combining the ideas above with Monte Carlo search algorithm leads to better results, which is expected because rather than the greedy approaches above, it simulates subsequent game states and anticipates risks such as dead ends. The agent performs slightly better than before, and beats `staff_team_top` occasionally.
 
+It is also worth mentioning that, due to the logic in decision tree, agents using mode selection are more likely to be defensive rather than offensive. When there is a contest between two of such agents, it is likely that both teams stays near at the border since both team choose to be defensive, resulting in ties. The mode selection could be further improved either by refining the logic, or adapting some algorithms such as reinforcement learning.
